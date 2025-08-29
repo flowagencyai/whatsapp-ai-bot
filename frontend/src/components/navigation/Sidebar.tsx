@@ -15,6 +15,7 @@ import {
   Bot,
   Menu,
   X,
+  Shield,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -62,6 +63,13 @@ const navItems: NavItem[] = [
     icon: Settings,
     description: 'Configurações do bot',
   },
+  {
+    title: 'Admin Panel',
+    href: '/admin',
+    icon: Shield,
+    description: 'Painel administrativo',
+    badge: 'ADM'
+  },
 ];
 
 export function Sidebar({ isOpen = true, onToggle, className }: SidebarProps) {
@@ -108,7 +116,7 @@ export function Sidebar({ isOpen = true, onToggle, className }: SidebarProps) {
 
         {/* Navigation */}
         <nav className="flex-1 space-y-1 p-4">
-          {navItems.map((item) => {
+          {navItems.slice(0, -1).map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
             
@@ -139,6 +147,53 @@ export function Sidebar({ isOpen = true, onToggle, className }: SidebarProps) {
               </Link>
             );
           })}
+          
+          {/* Admin Panel Section */}
+          <div className="pt-4 border-t border-border/40">
+            <p className="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+              Administração
+            </p>
+            {(() => {
+              const adminItem = navItems[navItems.length - 1];
+              const Icon = adminItem.icon;
+              const isActive = pathname.startsWith(adminItem.href);
+              
+              return (
+                <Link
+                  key={adminItem.href}
+                  href={adminItem.href}
+                  className={cn(
+                    'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                    isActive
+                      ? 'bg-red-100 text-red-900 dark:bg-red-900/20 dark:text-red-100'
+                      : 'text-muted-foreground hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-900/10 dark:hover:text-red-200'
+                  )}
+                  onClick={() => {
+                    // Close mobile menu when navigating
+                    if (window.innerWidth < 768 && onToggle) {
+                      onToggle();
+                    }
+                  }}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span className="flex-1">{adminItem.title}</span>
+                  {adminItem.badge && (
+                    <Badge 
+                      variant={isActive ? "default" : "secondary"} 
+                      className={cn(
+                        "text-xs",
+                        isActive
+                          ? "bg-red-200 text-red-800 dark:bg-red-800/30 dark:text-red-200"
+                          : "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300"
+                      )}
+                    >
+                      {adminItem.badge}
+                    </Badge>
+                  )}
+                </Link>
+              );
+            })()}
+          </div>
         </nav>
 
         {/* Footer */}

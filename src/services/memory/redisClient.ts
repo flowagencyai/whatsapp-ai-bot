@@ -300,18 +300,44 @@ class RedisClient {
   public async saveConversationMetadata(userId: string, lastMessage: string, messageType: 'text' | 'audio' | 'image' | 'unknown' = 'text'): Promise<void> {
     try {
       const key = `conversation_${userId}`;
+      const now = Date.now();
+      const currentTime = new Date().toISOString();
+      
+      // Get existing metadata to preserve counters
+      let existingData: any = {};
+      try {
+        const existing = await memoryCache.get(key);
+        if (existing) {
+          existingData = JSON.parse(existing);
+        }
+      } catch (err) {
+        // Ignore parsing errors, start fresh
+      }
+      
       const metadata = {
         id: userId.replace('@s.whatsapp.net', '').replace('@g.us', ''),
+        userId: userId, // Add full userId for admin interface
         remoteJid: userId,
         name: this.formatUserName(userId),
-        lastMessage: lastMessage.substring(0, 100), // Limit message preview
-        lastMessageTime: new Date().toISOString(),
+        lastMessage: lastMessage.substring(0, 100),
+        lastMessageTime: currentTime,
+        lastActivity: currentTime,
         messageType,
         unreadCount: 0,
         isGroup: userId.includes('@g.us'),
         status: 'active',
         profilePicture: null,
-        updatedAt: Date.now(),
+        updatedAt: now,
+        // Message counters
+        totalMessages: (existingData.totalMessages || 0) + 1,
+        recentMessages: this.calculateRecentMessages(existingData, now),
+        // First conversation timestamp
+        conversationStarted: existingData.conversationStarted || currentTime,
+        // Track message types
+        messageTypeCount: {
+          ...existingData.messageTypeCount,
+          [messageType]: (existingData.messageTypeCount?.[messageType] || 0) + 1
+        }
       };
       
       await memoryCache.set(key, JSON.stringify(metadata), 86400); // 24 hours TTL
@@ -319,10 +345,26 @@ class RedisClient {
       // Add to conversation index
       this.conversationIndex.add(userId);
       
-      logger.debug('Conversation metadata saved', { userId, messageType });
+      logger.debug('Conversation metadata saved', { 
+        userId, 
+        messageType, 
+        totalMessages: metadata.totalMessages 
+      });
     } catch (error) {
       logger.error('Error saving conversation metadata', { userId, error: error as Error });
     }
+  }
+  
+  private calculateRecentMessages(existingData: any, currentTime: number): number {
+    const oneDayAgo = currentTime - (24 * 60 * 60 * 1000);
+    const lastUpdate = existingData.updatedAt || currentTime;
+    
+    // If last update was more than 24h ago, reset counter
+    if (lastUpdate < oneDayAgo) {
+      return 1;
+    }
+    
+    return (existingData.recentMessages || 0) + 1;
   }
 
   private formatUserName(userId: string): string {
@@ -369,6 +411,71 @@ class RedisClient {
   // Health check method
   public async ping(): Promise<string> {
     return 'PONG (Memory Cache)';
+  }
+  
+  // Test method to create sample conversations (dev only)
+  public async createTestConversations(): Promise<void> {
+    if (process.env.NODE_ENV !== 'development') return;
+    
+    const testConversations = [
+      {
+        userId: '5511999999999@s.whatsapp.net',
+        messages: ['Olá!', 'Como você está?', 'Obrigado pela resposta!']
+      },
+      {
+        userId: '5511888888888@s.whatsapp.net', 
+        messages: ['Preciso de ajuda', 'Sobre produtos naturais']
+      },
+      {
+        userId: '5511777777777@s.whatsapp.net',
+        messages: ['Bom dia!']
+      }
+    ];
+    
+    for (const conv of testConversations) {
+      // Create conversation metadata
+      await this.saveConversationMetadata(
+        conv.userId,
+        conv.messages[conv.messages.length - 1],
+        'text'
+      );
+      
+      // Create context with messages
+      const context = {
+        userId: conv.userId,
+        messages: conv.messages.map((msg, idx) => ({
+          body: msg,
+          fromMe: idx % 2 === 1, // Alternate between user and bot
+          timestamp: Date.now() - (conv.messages.length - idx) * 60000, // Spread over time
+          id: `test_${idx}`,
+          messageType: 'text' as const
+        })),
+        metadata: {
+          conversationStarted: Date.now() - conv.messages.length * 60000,
+          lastActivity: Date.now(),
+          totalMessages: conv.messages.length
+        }
+      };
+      
+      await this.setContext(conv.userId, context);
+    }
+    
+    logger.info('Test conversations created', { count: testConversations.length });
+    
+    // Simulate some AI interactions for the metrics
+    const langchainService = await import('../ai/langchain');
+    const service = langchainService.langchainService;
+    
+    // Simulate some metrics (artificially add to show working metrics)
+    (service as any).metrics = {
+      ...(service as any).metrics,
+      totalTokens: 1250,
+      totalRequests: 8,
+      successfulRequests: 7,
+      totalResponseTime: 12000 // 8 requests averaging 1.5s each
+    };
+    
+    logger.info('Test AI metrics added');
   }
 }
 

@@ -1,4 +1,4 @@
-import { ApiResponse, BotStatus, Conversation, Message, LogEntry, DashboardStats, BotSettings } from '@/types';
+import { ApiResponse, BotStatus, Conversation, Message, LogEntry, DashboardStats, BotSettings, AdminUser, AdminStats, AdminConfig, AdminMemoryInfo, AdminApiResponse, AdminConfigUpdate, AdminBulkAction } from '@/types';
 
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
   ? '/api/backend' 
@@ -237,6 +237,123 @@ class ApiClient {
       timestamp: string;
       services: { [key: string]: 'healthy' | 'unhealthy' };
     }>('/system/health');
+  }
+
+  // Admin API Methods
+  private async adminRequest<T>(endpoint: string, options?: RequestInit): Promise<AdminApiResponse<T>> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin${endpoint}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...options?.headers,
+        },
+        ...options,
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || `HTTP error! status: ${response.status}`);
+      }
+
+      return data;
+    } catch (error) {
+      console.error(`Admin API Error (${endpoint}):`, error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
+  // Admin Configuration
+  async getAdminConfig(): Promise<AdminApiResponse<AdminConfig>> {
+    return this.adminRequest<AdminConfig>('/config');
+  }
+
+  async updateAdminConfig(update: AdminConfigUpdate): Promise<AdminApiResponse<AdminConfig>> {
+    return this.adminRequest<AdminConfig>('/config', {
+      method: 'PUT',
+      body: JSON.stringify(update),
+    });
+  }
+
+  async updateAdminConfigSection(section: string, data: any, admin: string): Promise<AdminApiResponse<AdminConfig>> {
+    return this.adminRequest<AdminConfig>(`/config/${section}`, {
+      method: 'PUT',
+      body: JSON.stringify({ data, admin }),
+    });
+  }
+
+  async resetAdminConfig(admin: string): Promise<AdminApiResponse<AdminConfig>> {
+    return this.adminRequest<AdminConfig>('/config/reset', {
+      method: 'POST',
+      body: JSON.stringify({ admin }),
+    });
+  }
+
+  async createAdminConfigBackup(): Promise<AdminApiResponse<{ backupPath: string }>> {
+    return this.adminRequest<{ backupPath: string }>('/config/backup', {
+      method: 'POST',
+    });
+  }
+
+  // Admin Statistics
+  async getAdminStats(): Promise<AdminApiResponse<AdminStats>> {
+    return this.adminRequest<AdminStats>('/stats');
+  }
+
+  async getAdminHealth(): Promise<AdminApiResponse<{
+    status: string;
+    services: { [key: string]: 'healthy' | 'unhealthy' };
+    uptime: number;
+    memory: any;
+  }>> {
+    return this.adminRequest<{
+      status: string;
+      services: { [key: string]: 'healthy' | 'unhealthy' };
+      uptime: number;
+      memory: any;
+    }>('/health');
+  }
+
+  // Admin User Management
+  async getAdminUsers(): Promise<AdminApiResponse<AdminUser[]>> {
+    return this.adminRequest<AdminUser[]>('/users');
+  }
+
+  async getUserMemory(userId: string): Promise<AdminApiResponse<AdminMemoryInfo>> {
+    return this.adminRequest<AdminMemoryInfo>(`/users/${encodeURIComponent(userId)}/memory`);
+  }
+
+  async clearUserMemory(userId: string, admin: string): Promise<AdminApiResponse<void>> {
+    return this.adminRequest<void>(`/users/${encodeURIComponent(userId)}/memory`, {
+      method: 'DELETE',
+      body: JSON.stringify({ admin }),
+    });
+  }
+
+  async pauseUser(userId: string, duration: number, admin: string): Promise<AdminApiResponse<void>> {
+    return this.adminRequest<void>(`/users/${encodeURIComponent(userId)}/pause`, {
+      method: 'POST',
+      body: JSON.stringify({ duration, admin }),
+    });
+  }
+
+  async resumeUser(userId: string, admin: string): Promise<AdminApiResponse<void>> {
+    return this.adminRequest<void>(`/users/${encodeURIComponent(userId)}/resume`, {
+      method: 'POST',
+      body: JSON.stringify({ admin }),
+    });
+  }
+
+  // Admin Bulk Actions
+  async performBulkAction(action: AdminBulkAction): Promise<AdminApiResponse<any>> {
+    return this.adminRequest<any>('/bulk-actions', {
+      method: 'POST',
+      body: JSON.stringify(action),
+    });
   }
 }
 

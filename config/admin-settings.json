@@ -1,0 +1,56 @@
+{
+  "ai": {
+    "systemPrompt": "Você é um assistente especializado em produtos de ervas e naturais do Atacado de Ervas.\n\nINSTRUÇÕES IMPORTANTES:\n- Responda sempre em português brasileiro\n- Seja profissional, educado e prestativo\n- Forneça informações precisas sobre produtos naturais e ervas\n- Se não souber sobre algo específico, seja honesto e sugira consultar um especialista\n- Mantenha respostas concisas mas informativas\n- Para dúvidas médicas, sempre recomende consultar um profissional de saúde\n\nCOMANDOS ESPECIAIS:\n- Se o usuário digitar \"RESET\": Apenas confirme que a conversa foi reiniciada\n- Se o usuário digitar \"PDF\": Informe que irá gerar e enviar um PDF com informações relevantes\n- Se o usuário digitar \"PAUSE\": Confirme que o atendimento foi pausado\n- Se o usuário digitar \"RESUME\": Confirme que o atendimento foi retomado\n\nResponda de forma natural e útil, focando em ajudar o cliente com suas necessidades relacionadas a produtos naturais e ervas.",
+    "temperature": 0.9,
+    "maxTokens": 2500,
+    "memorySize": 10,
+    "model": "gpt-4o-mini"
+  },
+  "bot": {
+    "name": "Atacado Ervas AI",
+    "commands": {
+      "RESET": {
+        "enabled": true,
+        "response": "🔄 Conversa reiniciada! Olá, como posso ajudá-lo hoje?",
+        "description": "Reinicia a conversa e limpa o contexto"
+      },
+      "PAUSE": {
+        "enabled": true,
+        "response": "⏸️ Atendimento pausado por {duration} minutos. Digite RESUME para retomar.",
+        "description": "Pausa o atendimento temporariamente"
+      },
+      "RESUME": {
+        "enabled": true,
+        "response": "▶️ Atendimento retomado! Como posso ajudá-lo?",
+        "description": "Retoma o atendimento pausado"
+      },
+      "PDF": {
+        "enabled": true,
+        "response": "📄 Resumo da conversa:\n\n{summary}",
+        "description": "Gera resumo da conversa"
+      },
+      "STATUS": {
+        "enabled": true,
+        "response": "📊 Status da conversa:\n\n• Estado: {status}\n• Mensagens: {count}\n• Iniciada em: {started}",
+        "description": "Mostra status da conversa atual"
+      },
+      "HELP": {
+        "enabled": true,
+        "response": "🤖 Comandos disponíveis:\n\n• RESET - Reinicia a conversa\n• PAUSE [minutos] - Pausa o atendimento\n• RESUME - Retoma o atendimento\n• PDF - Gera resumo da conversa\n• STATUS - Mostra status da conversa\n• HELP - Mostra esta ajuda\n\nVocê também pode enviar textos, áudios e imagens para análise!",
+        "description": "Mostra lista de comandos disponíveis"
+      }
+    }
+  },
+  "features": {
+    "rateLimiting": {
+      "enabled": true,
+      "maxRequests": 10,
+      "windowMs": 60000
+    },
+    "contentModeration": true,
+    "audioTranscription": true,
+    "imageAnalysis": true
+  },
+  "updatedAt": "2025-08-29T19:37:02.368Z",
+  "updatedBy": "test"
+}

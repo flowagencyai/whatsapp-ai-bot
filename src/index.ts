@@ -7,6 +7,8 @@ import { messageHandler } from './handlers/messageHandler.js';
 import { logger } from './utils/logger.js';
 import { env } from './config/env.js';
 import { BotError } from './types/index.js';
+import { adminRouter } from './routes/admin.js';
+import { adminConfigManager } from './services/admin/configManager.js';
 
 class WhatsAppBot {
   private app: express.Application;
@@ -288,37 +290,15 @@ class WhatsAppBot {
         // Get real conversations from cache
         const conversations = await Redis.getAllConversations();
         
-        // If no real conversations, show helpful message
-        if (conversations.length === 0) {
-          const mockConversations = [
-            {
-              id: 'example',
-              remoteJid: 'example@s.whatsapp.net',
-              name: 'Nenhuma conversa ainda',
-              lastMessage: 'Envie uma mensagem para o bot no WhatsApp para ver conversas reais aqui!',
-              lastMessageTime: new Date().toISOString(),
-              unreadCount: 0,
-              isGroup: false,
-              status: 'active',
-              profilePicture: null,
-            }
-          ];
-
-          res.json({
-            success: true,
-            conversations: mockConversations,
-            total: mockConversations.length,
-            timestamp: new Date().toISOString(),
-            note: "Bot está conectado! Envie uma mensagem no WhatsApp para ver conversas reais."
-          });
-        } else {
-          res.json({
-            success: true,
-            conversations,
-            total: conversations.length,
-            timestamp: new Date().toISOString(),
-          });
-        }
+        res.json({
+          success: true,
+          conversations,
+          total: conversations.length,
+          timestamp: new Date().toISOString(),
+          note: conversations.length === 0 
+            ? "Bot está conectado! Envie uma mensagem no WhatsApp para ver conversas reais." 
+            : undefined
+        });
       } catch (error) {
         logger.error('Conversations endpoint error', { error: error as Error });
         res.status(500).json({
@@ -327,6 +307,33 @@ class WhatsAppBot {
         });
       }
     });
+
+    // Test endpoint to create sample data (development only)
+    this.app.post('/api/test/create-conversations', async (req, res) => {
+      if (env.nodeEnv !== 'development') {
+        return res.status(403).json({
+          error: 'This endpoint is only available in development mode'
+        });
+      }
+      
+      try {
+        await Redis.createTestConversations();
+        res.json({
+          success: true,
+          message: 'Test conversations created',
+          timestamp: new Date().toISOString()
+        });
+      } catch (error) {
+        logger.error('Failed to create test conversations', { error: error as Error });
+        res.status(500).json({
+          error: 'Failed to create test conversations',
+          details: (error as Error).message
+        });
+      }
+    });
+
+    // Admin API routes (isolated from main bot functionality)
+    this.app.use('/api/admin', adminRouter);
 
     // 404 handler
     this.app.use('*', (req, res) => {
@@ -413,6 +420,11 @@ class WhatsAppBot {
       logger.info('Connecting to Redis...');
       await Redis.connect();
       logger.info('Redis connected successfully');
+
+      // Initialize Admin Configuration Manager
+      logger.info('Initializing admin configuration...');
+      await adminConfigManager.initialize();
+      logger.info('Admin configuration initialized successfully');
 
       // Initialize WhatsApp connection
       logger.info('Initializing WhatsApp connection...');

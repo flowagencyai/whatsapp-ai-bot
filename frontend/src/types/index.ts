@@ -127,3 +127,116 @@ export interface NotificationSettings {
   sound: boolean;
   desktop: boolean;
 }
+
+// Admin Interface Types
+export interface AdminUser {
+  id: string;
+  phone: string;
+  name?: string;
+  status: 'active' | 'paused';
+  lastMessage: string;
+  lastActivity: string;
+  messageCount: number;
+  isBlacklisted: boolean;
+  context: {
+    messageCount: number;
+    conversationStarted: string;
+    lastReset?: string;
+  };
+}
+
+export interface AdminStats {
+  system: {
+    uptime: number;
+    version: string;
+    nodeEnv: string;
+    memoryUsage: {
+      rss: number;
+      heapTotal: number;
+      heapUsed: number;
+      external: number;
+    };
+  };
+  bot: {
+    totalMessages: number;
+    totalUsers: number;
+    activeUsers: number;
+    messagesLast24h: number;
+  };
+  ai: {
+    totalTokens: number;
+    averageResponseTime: number;
+    successRate: number;
+  };
+  services: {
+    whatsapp: 'healthy' | 'unhealthy';
+    langchain: 'healthy' | 'unhealthy';
+    redis: 'healthy' | 'unhealthy';
+  };
+}
+
+export interface AdminConfig {
+  ai: {
+    systemPrompt: string;
+    temperature: number;
+    maxTokens: number;
+    memorySize: number;
+    model: string;
+  };
+  bot: {
+    name: string;
+    welcomeMessage: string;
+    commands: {
+      reset: string;
+      pause: string;
+      resume: string;
+      pdf: string;
+      status: string;
+      help: string;
+    };
+  };
+  features: {
+    audioTranscription: boolean;
+    imageAnalysis: boolean;
+    pdfGeneration: boolean;
+    contextMemory: boolean;
+    rateLimiting: boolean;
+  };
+  version: string;
+  updatedAt: string;
+  updatedBy: string;
+}
+
+export interface AdminMemoryInfo {
+  userId: string;
+  phone: string;
+  memorySize: number;
+  messages: {
+    role: 'user' | 'assistant';
+    content: string;
+    timestamp: string;
+  }[];
+  lastActivity: string;
+}
+
+export interface AdminApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  message?: string;
+  error?: string;
+  timestamp: string;
+}
+
+export interface AdminConfigUpdate {
+  section: keyof AdminConfig;
+  field: string;
+  value: any;
+  admin: string;
+}
+
+export interface AdminBulkAction {
+  action: 'clear_memory' | 'pause_users' | 'resume_users';
+  userIds?: string[];
+  duration?: number;
+  admin: string;
+}

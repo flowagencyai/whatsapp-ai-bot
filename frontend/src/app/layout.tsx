@@ -6,6 +6,8 @@ import './globals.css';
 import { Sidebar } from '@/components/navigation/Sidebar';
 import { Header } from '@/components/navigation/Header';
 import { WebSocketProvider } from '@/providers/WebSocketProvider';
+import { ToastProvider } from '@/components/ui/toast';
+import { ConfirmProvider } from '@/components/ui/confirm-dialog';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -29,26 +31,30 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" />
       </head>
       <body className={inter.className}>
-        <WebSocketProvider>
-          <div className="flex h-screen overflow-hidden">
-            {/* Sidebar */}
-            <Sidebar 
-              isOpen={sidebarOpen} 
-              onToggle={toggleSidebar}
-            />
-            
-            {/* Main Content */}
-            <div className="flex flex-1 flex-col overflow-hidden">
-              <Header onMenuToggle={toggleSidebar} />
-              
-              <main className="flex-1 overflow-y-auto bg-muted/50 p-4 lg:p-6">
-                <div className="mx-auto max-w-7xl">
-                  {children}
+        <ToastProvider>
+          <ConfirmProvider>
+            <WebSocketProvider>
+              <div className="flex h-screen overflow-hidden">
+                {/* Sidebar */}
+                <Sidebar 
+                  isOpen={sidebarOpen} 
+                  onToggle={toggleSidebar}
+                />
+                
+                {/* Main Content */}
+                <div className="flex flex-1 flex-col overflow-hidden">
+                  <Header onMenuToggle={toggleSidebar} />
+                  
+                  <main className="flex-1 overflow-y-auto bg-muted/50 p-4 lg:p-6">
+                    <div className="mx-auto max-w-7xl">
+                      {children}
+                    </div>
+                  </main>
                 </div>
-              </main>
-            </div>
-          </div>
-        </WebSocketProvider>
+              </div>
+            </WebSocketProvider>
+          </ConfirmProvider>
+        </ToastProvider>
       </body>
     </html>
   );

@@ -24,6 +24,15 @@ class LangChainService {
   private memoryMap: Map<string, BufferWindowMemory> = new Map();
   private redis: typeof Redis;
   private static instance: LangChainService;
+  
+  // AI Metrics tracking
+  private metrics = {
+    totalTokens: 0,
+    totalRequests: 0,
+    successfulRequests: 0,
+    totalResponseTime: 0,
+    startTime: Date.now()
+  };
 
   private constructor() {
     const config = getOpenAIConfig();
@@ -188,11 +197,18 @@ Assistente:`,
       // Extract token usage (if available)
       const tokensUsed = response.response?.length || 0; // Approximation
 
+      // Update metrics for successful requests
+      this.metrics.totalRequests++;
+      this.metrics.successfulRequests++;
+      this.metrics.totalTokens += tokensUsed;
+      this.metrics.totalResponseTime += duration;
+
       logger.info('LangChain response generated', { 
         userId,
         duration,
         model: env.openai.model,
-        responseLength: response.response?.length || 0
+        responseLength: response.response?.length || 0,
+        tokensUsed
       });
 
       return {
@@ -208,6 +224,11 @@ Assistente:`,
 
     } catch (error) {
       const duration = Date.now() - startTime;
+      
+      // Update metrics for failed requests
+      this.metrics.totalRequests++;
+      this.metrics.totalResponseTime += duration;
+      
       logger.error('LangChain request failed', { 
         error: error as Error, 
         userId,
@@ -476,6 +497,35 @@ RESUMO:`,
       totalUsers: this.memoryMap.size,
       memoryType: 'ConversationBufferWindowMemory',
       windowSize: 10,
+    };
+  }
+
+  /**
+   * Get AI performance metrics
+   */
+  public getAIStats(): {
+    totalTokens: number;
+    averageResponseTime: number;
+    successRate: number;
+    totalRequests: number;
+    uptime: number;
+  } {
+    const averageResponseTime = this.metrics.totalRequests > 0 
+      ? Math.round(this.metrics.totalResponseTime / this.metrics.totalRequests)
+      : 0;
+    
+    const successRate = this.metrics.totalRequests > 0 
+      ? this.metrics.successfulRequests / this.metrics.totalRequests
+      : 0;
+    
+    const uptime = Math.floor((Date.now() - this.metrics.startTime) / 1000);
+    
+    return {
+      totalTokens: this.metrics.totalTokens,
+      averageResponseTime,
+      successRate,
+      totalRequests: this.metrics.totalRequests,
+      uptime
     };
   }
 
