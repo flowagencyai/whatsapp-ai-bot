@@ -15,10 +15,10 @@ const EnvSchema = z.object({
   PORT: z.string().transform(Number).pipe(z.number().int().positive()).default('3000'),
   LOG_LEVEL: LogLevelSchema.default('info'),
 
-  // OpenAI/DeepSeek Configuration
-  OPENAI_API_KEY: z.string().min(1, 'OpenAI/DeepSeek API key is required'),
+  // OpenAI Configuration
+  OPENAI_API_KEY: z.string().min(1, 'OpenAI API key is required'),
   OPENAI_BASE_URL: z.string().url().optional(),
-  OPENAI_MODEL: z.string().default('deepseek-chat'),
+  OPENAI_MODEL: z.string().default('gpt-4o-mini'),
   OPENAI_MAX_TOKENS: z.string().transform(Number).pipe(z.number().int().positive()).default('2000'),
   OPENAI_TEMPERATURE: z.string().transform(Number).pipe(z.number().min(0).max(2)).default('0.7'),
 
@@ -106,7 +106,7 @@ export const env: EnvConfig = {
 
   openai: {
     apiKey: parsedEnv.OPENAI_API_KEY,
-    baseUrl: parsedEnv.OPENAI_BASE_URL,
+    baseUrl: parsedEnv.OPENAI_BASE_URL || 'https://api.openai.com/v1',
     model: parsedEnv.OPENAI_MODEL,
     maxTokens: parsedEnv.OPENAI_MAX_TOKENS,
     temperature: parsedEnv.OPENAI_TEMPERATURE,
@@ -151,9 +151,9 @@ export const env: EnvConfig = {
 // Validation functions
 export function validateConfig(): boolean {
   try {
-    // DeepSeek API key validation
+    // OpenAI API key validation
     if (!env.openai.apiKey || env.openai.apiKey.length < 10) {
-      throw new Error('DeepSeek API key is required');
+      throw new Error('OpenAI API key is required');
     }
 
     // Test Groq API key format (only if provided)
@@ -220,7 +220,7 @@ export function getRedisConfig() {
   return config;
 }
 
-// OpenAI/DeepSeek configuration helper
+// OpenAI configuration helper
 export function getOpenAIConfig() {
   return {
     apiKey: env.openai.apiKey,
