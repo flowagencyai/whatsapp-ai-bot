@@ -1,6 +1,6 @@
 {
   "name": "whatsapp-ai-bot",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "WhatsApp AI Bot with Baileys, TypeScript and LangChain",
   "main": "dist/index.js",
   "scripts": {
