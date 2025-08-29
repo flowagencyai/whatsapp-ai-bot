@@ -9,7 +9,7 @@ import {
 } from '@/types';
 import { whatsappConnection } from '@/connection/whatsapp';
 import { Redis } from '@/services/memory/redisClient';
-import { openaiService } from '@/services/ai/openai';
+import { langchainService } from '@/services/ai/langchain';
 import { audioProcessor } from '@/services/media/audioProcessor';
 import { logger } from '@/utils/logger';
 import { env } from '@/config/env';
@@ -187,7 +187,7 @@ class MessageHandler {
       logger.debug('Processing text message', { userId, textLength: text.length });
 
       // Generate AI response
-      const aiResponse = await openaiService.generateResponse(context, text, userId);
+      const aiResponse = await langchainService.generateResponse(context, text, userId);
 
       // Send response
       await whatsappConnection.sendMessage(userId, aiResponse.content);
@@ -322,7 +322,7 @@ class MessageHandler {
       );
 
       // Analyze image with AI
-      const analysis = await openaiService.analyzeImage(
+      const analysis = await langchainService.analyzeImage(
         imageDataUrl,
         message.mediaCaption,
         userId
@@ -383,6 +383,7 @@ class MessageHandler {
       switch (command.type) {
         case CommandType.RESET:
           await Redis.clearContext(userId);
+          langchainService.clearUserMemory(userId); // Clear LangChain memory too
           responseMessage = '🔄 Conversa reiniciada! Olá, como posso ajudá-lo hoje?';
           break;
 
@@ -399,7 +400,7 @@ class MessageHandler {
 
         case CommandType.PDF:
           try {
-            const summary = await openaiService.generateConversationSummary(context, userId);
+            const summary = await langchainService.generateConversationSummary(context, userId);
             responseMessage = '📄 Resumo da conversa:\n\n' + summary.content;
             // TODO: Implement PDF generation if needed
           } catch (error) {
@@ -543,10 +544,10 @@ class MessageHandler {
     try {
       const whatsappHealth = await whatsappConnection.healthCheck();
       const redisHealth = await Redis.healthCheck();
-      const openaiHealth = await openaiService.healthCheck();
+      const langchainHealth = await langchainService.healthCheck();
       const audioHealth = await audioProcessor.healthCheck();
 
-      const allHealthy = [whatsappHealth, redisHealth, openaiHealth, audioHealth]
+      const allHealthy = [whatsappHealth, redisHealth, langchainHealth, audioHealth]
         .every(h => h.status === 'healthy');
 
       return {
@@ -554,7 +555,7 @@ class MessageHandler {
         details: {
           whatsapp: whatsappHealth.status,
           redis: redisHealth.status,
-          openai: openaiHealth.status,
+          langchain: langchainHealth.status,
           audioProcessor: audioHealth.status,
           maxContextMessages: env.bot.maxContextMessages,
           messageTimeout: env.bot.messageTimeout,

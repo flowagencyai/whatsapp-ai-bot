@@ -61,6 +61,7 @@ const EnvSchema = z.object({
   // Cache Configuration
   USE_MEMORY_CACHE: z.string().optional(),
 
+
   // Logging Configuration
   LOG_FILE_PATH: z.string().default('logs/bot.log'),
   LOG_MAX_SIZE: z.string().transform(Number).pipe(z.number().int().positive()).default('10485760'), // 10MB
