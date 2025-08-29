@@ -18,7 +18,7 @@ const EnvSchema = z.object({
   // OpenAI Configuration
   OPENAI_API_KEY: z.string().min(1, 'OpenAI API key is required'),
   OPENAI_BASE_URL: z.string().url().optional(),
-  OPENAI_MODEL: z.string().default('gpt-4o-mini'),
+  OPENAI_MODEL: z.string().default('deepseek-chat'),
   OPENAI_MAX_TOKENS: z.string().transform(Number).pipe(z.number().int().positive()).default('2000'),
   OPENAI_TEMPERATURE: z.string().transform(Number).pipe(z.number().min(0).max(2)).default('0.7'),
 
@@ -71,6 +71,16 @@ const EnvSchema = z.object({
 let parsedEnv: z.infer<typeof EnvSchema>;
 
 try {
+  // Force reload environment variables
+  delete require.cache[require.resolve('dotenv')];
+  require('dotenv').config({ override: true });
+  
+  console.log('Environment variables reloaded:', {
+    OPENAI_MODEL: process.env.OPENAI_MODEL,
+    OPENAI_BASE_URL: process.env.OPENAI_BASE_URL,
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY?.substring(0, 20) + '...'
+  });
+  
   parsedEnv = EnvSchema.parse(process.env);
 } catch (error) {
   if (error instanceof z.ZodError) {
