@@ -8,6 +8,7 @@ import { logger } from './utils/logger.js';
 import { env } from './config/env.js';
 import { BotError } from './types/index.js';
 import { adminRouter } from './routes/admin.js';
+import { authRouter } from './routes/auth.js';
 import { adminConfigManager } from './services/admin/configManager.js';
 
 class WhatsAppBot {
@@ -332,7 +333,10 @@ class WhatsAppBot {
       }
     });
 
-    // Admin API routes (isolated from main bot functionality)
+    // Authentication routes
+    this.app.use('/api/auth', authRouter);
+
+    // Admin API routes (isolated from main bot functionality) - now protected by auth
     this.app.use('/api/admin', adminRouter);
 
     // 404 handler

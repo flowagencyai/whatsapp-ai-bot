@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   LayoutDashboard,
   QrCode,
@@ -30,50 +31,85 @@ interface NavItem {
   icon: React.ComponentType<any>;
   badge?: string;
   description?: string;
+  permission?: string;
+  roles?: string[];
 }
 
 const navItems: NavItem[] = [
   {
     title: 'Dashboard',
-    href: '/',
+    href: '/admin',
     icon: LayoutDashboard,
     description: 'Visão geral do sistema',
+    permission: 'system:read',
+    roles: ['super_admin', 'admin']
   },
   {
     title: 'QR Code',
     href: '/qr',
     icon: QrCode,
     description: 'Autenticação WhatsApp',
+    permission: 'bot:read',
+    roles: ['super_admin', 'admin', 'operator']
   },
   {
     title: 'Conversas',
     href: '/conversations',
     icon: MessageCircle,
     description: 'Gerenciar conversas',
+    permission: 'conversations:read',
+    roles: ['super_admin', 'admin', 'operator', 'viewer']
   },
   {
-    title: 'Logs',
-    href: '/logs',
+    title: 'Logs do Sistema',
+    href: '/admin/logs',
     icon: ScrollText,
     description: 'Histórico de eventos',
+    permission: 'logs:read',
+    roles: ['super_admin', 'admin']
   },
   {
     title: 'Configurações',
-    href: '/settings',
+    href: '/admin/config',
     icon: Settings,
     description: 'Configurações do bot',
+    permission: 'config:read',
+    roles: ['super_admin', 'admin']
   },
   {
-    title: 'Admin Panel',
-    href: '/admin',
+    title: 'Usuários',
+    href: '/admin/users',
     icon: Shield,
-    description: 'Painel administrativo',
-    badge: 'ADM'
+    description: 'Gerenciar usuários',
+    badge: 'ADM',
+    permission: 'admin_users:read',
+    roles: ['super_admin', 'admin']
   },
 ];
 
 export function Sidebar({ isOpen = true, onToggle, className }: SidebarProps) {
   const pathname = usePathname();
+  const { user, hasPermission, hasRole } = useAuth();
+
+  // Filter navigation items based on user permissions and role
+  const filteredNavItems = navItems.filter(item => {
+    // If no permission/role restrictions, show to everyone
+    if (!item.permission && !item.roles) {
+      return true;
+    }
+
+    // Check permission if specified
+    if (item.permission && !hasPermission(item.permission)) {
+      return false;
+    }
+
+    // Check role if specified
+    if (item.roles && user && !item.roles.includes(user.role)) {
+      return false;
+    }
+
+    return true;
+  });
 
   return (
     <>
@@ -116,7 +152,7 @@ export function Sidebar({ isOpen = true, onToggle, className }: SidebarProps) {
 
         {/* Navigation */}
         <nav className="flex-1 space-y-1 p-4">
-          {navItems.slice(0, -1).map((item) => {
+          {filteredNavItems.slice(0, -1).map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
             
@@ -154,7 +190,8 @@ export function Sidebar({ isOpen = true, onToggle, className }: SidebarProps) {
               Administração
             </p>
             {(() => {
-              const adminItem = navItems[navItems.length - 1];
+              const adminItem = filteredNavItems[filteredNavItems.length - 1];
+              if (!adminItem) return null;
               const Icon = adminItem.icon;
               const isActive = pathname.startsWith(adminItem.href);
               

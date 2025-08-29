@@ -1,4 +1,5 @@
 import { ApiResponse, BotStatus, Conversation, Message, LogEntry, DashboardStats, BotSettings, AdminUser, AdminStats, AdminConfig, AdminMemoryInfo, AdminApiResponse, AdminConfigUpdate, AdminBulkAction } from '@/types';
+import { authService } from './auth';
 
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
   ? '/api/backend' 
@@ -242,12 +243,12 @@ class ApiClient {
   // Admin API Methods
   private async adminRequest<T>(endpoint: string, options?: RequestInit): Promise<AdminApiResponse<T>> {
     try {
-      const response = await fetch(`${API_BASE_URL}/admin${endpoint}`, {
+      const response = await authService.makeAuthenticatedRequest(`${API_BASE_URL}/admin${endpoint}`, {
+        ...options,
         headers: {
           'Content-Type': 'application/json',
           ...options?.headers,
         },
-        ...options,
       });
 
       const data = await response.json();

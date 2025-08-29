@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { formatRelativeTime, extractNameFromJid } from '@/lib/utils';
 import { useConversations } from '@/hooks/useConversations';
+import { SmartBackButton } from '@/components/ui/smart-back-button';
 import Link from 'next/link';
 
 export default function ConversationsPage() {
@@ -77,11 +78,7 @@ export default function ConversationsPage() {
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex items-center gap-4">
-        <Link href="/">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </Link>
+        <SmartBackButton />
         
         <div className="flex-1">
           <h1 className="text-3xl font-bold tracking-tight">Conversas</h1>

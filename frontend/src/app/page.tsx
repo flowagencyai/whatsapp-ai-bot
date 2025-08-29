@@ -1,556 +1,330 @@
 'use client';
 
-import React, { useState } from 'react';
-import { StatusCard } from '@/components/dashboard/StatusCard';
-import { StatsCards } from '@/components/dashboard/StatsCards';
-import { QRCodeDisplay } from '@/components/qr-code/QRCodeDisplay';
+import { useState } from 'react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
 import { 
-  RefreshCcw, 
-  ExternalLink,
-  Activity,
-  Clock,
-  MessageCircle,
-  AlertTriangle,
-  Plus,
+  MessageSquare, 
+  Bot, 
+  Shield, 
+  Zap, 
+  Users, 
+  Settings,
+  ChevronRight,
+  Star,
+  CheckCircle2,
+  ArrowRight,
+  User,
+  UserCog,
   Smartphone,
-  QrCode,
-  Power,
-  PowerOff,
-  RotateCcw,
-  Trash2,
-  Eye
+  Brain,
+  BarChart3,
+  Lock
 } from 'lucide-react';
-import { useBotStatus } from '@/hooks/useBotStatus';
-import { useDashboardStats } from '@/hooks/useDashboardStats';
-import { formatRelativeTime } from '@/lib/utils';
-import Link from 'next/link';
 
-export default function DashboardPage() {
-  const [instances, setInstances] = useState([
+export default function LandingPage() {
+  const [activeFeature, setActiveFeature] = useState(0);
+
+  const features = [
     {
-      id: 'default',
-      name: 'Instância Principal',
-      status: 'disconnected',
-      qrCode: null,
-      isGeneratingQr: false,
-      phoneNumber: null,
-      lastActivity: null,
+      icon: Bot,
+      title: 'IA Avançada',
+      description: 'Processamento inteligente de mensagens com GPT-4o-mini e Groq Whisper'
+    },
+    {
+      icon: Shield,
+      title: 'Sistema Seguro',
+      description: 'Autenticação JWT, roles e permissões granulares para máxima segurança'
+    },
+    {
+      icon: Zap,
+      title: 'Performance Otimizada',
+      description: 'Redis cache, rate limiting e processamento assíncrono para alta performance'
+    },
+    {
+      icon: BarChart3,
+      title: 'Analytics Completos',
+      description: 'Dashboard com métricas detalhadas e relatórios em tempo real'
     }
-  ]);
-  const [isCreatingInstance, setIsCreatingInstance] = useState(false);
-  
-  const { 
-    status, 
-    isLoading: statusLoading, 
-    error: statusError,
-    startBot, 
-    stopBot, 
-    restartBot, 
-    pauseBot, 
-    resumeBot,
-    refetch: refetchStatus 
-  } = useBotStatus();
-  
-  const { 
-    stats, 
-    isLoading: statsLoading, 
-    error: statsError,
-    refetch: refetchStats 
-  } = useDashboardStats();
+  ];
 
-  const handleRefresh = async () => {
-    await Promise.all([
-      refetchStatus(),
-      refetchStats()
-    ]);
-  };
-
-  const handleCreateInstance = async () => {
-    setIsCreatingInstance(true);
-    try {
-      const newInstance = {
-        id: `instance_${Date.now()}`,
-        name: `Instância ${instances.length + 1}`,
-        status: 'disconnected',
-        qrCode: null,
-        isGeneratingQr: false,
-        phoneNumber: null,
-        lastActivity: null,
-      };
-      setInstances(prev => [...prev, newInstance]);
-    } finally {
-      setIsCreatingInstance(false);
+  const plans = [
+    {
+      name: 'Usuário',
+      description: 'Acesso básico ao sistema',
+      icon: User,
+      features: [
+        'Visualização de conversas',
+        'Estatísticas básicas',
+        'Acesso ao dashboard',
+        'Suporte por email'
+      ],
+      buttonText: 'Acesso de Usuário',
+      buttonVariant: 'outline' as const,
+      href: '/auth/login?type=user'
+    },
+    {
+      name: 'Administrador',
+      description: 'Controle total do sistema',
+      icon: UserCog,
+      features: [
+        'Todas as funcionalidades',
+        'Configuração avançada',
+        'Gestão de usuários',
+        'Analytics completos',
+        'Suporte prioritário'
+      ],
+      buttonText: 'Acesso Administrativo',
+      buttonVariant: 'default' as const,
+      href: '/admin/login',
+      popular: true
     }
-  };
-
-  const handleGenerateQR = async (instanceId: string) => {
-    setInstances(prev => prev.map(instance => 
-      instance.id === instanceId 
-        ? { ...instance, isGeneratingQr: true }
-        : instance
-    ));
-
-    try {
-      // Chamada para backend para gerar QR
-      const response = await fetch('/api/backend/qr');
-      const data = await response.json();
-      
-      setInstances(prev => prev.map(instance => 
-        instance.id === instanceId 
-          ? { 
-              ...instance, 
-              qrCode: data.qrCodeVisual || data.qrCode, // Prioriza visual se disponível
-              status: 'qr_generated',
-              isGeneratingQr: false 
-            }
-          : instance
-      ));
-    } catch (error) {
-      console.error('Erro ao gerar QR code:', error);
-      setInstances(prev => prev.map(instance => 
-        instance.id === instanceId 
-          ? { ...instance, isGeneratingQr: false }
-          : instance
-      ));
-    }
-  };
-
-  const handleStartInstance = async (instanceId: string) => {
-    setInstances(prev => prev.map(instance => 
-      instance.id === instanceId 
-        ? { ...instance, status: 'starting' }
-        : instance
-    ));
-
-    try {
-      // Simular start da instância
-      setTimeout(() => {
-        setInstances(prev => prev.map(instance => 
-          instance.id === instanceId 
-            ? { ...instance, status: 'connected', lastActivity: new Date().toISOString() as any }
-            : instance
-        ));
-      }, 2000);
-    } catch (error) {
-      console.error('Erro ao iniciar instância:', error);
-    }
-  };
-
-  const handleStopInstance = async (instanceId: string) => {
-    setInstances(prev => prev.map(instance => 
-      instance.id === instanceId 
-        ? { ...instance, status: 'disconnected', qrCode: null }
-        : instance
-    ));
-  };
-
-  const handleDeleteInstance = async (instanceId: string) => {
-    if (instanceId === 'default') return; // Não permite deletar instância principal
-    setInstances(prev => prev.filter(instance => instance.id !== instanceId));
-  };
+  ];
 
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Visão geral do sistema WhatsApp Bot
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
+      {/* Header */}
+      <header className="border-b border-white/10 bg-white/5 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-6">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center justify-center w-10 h-10 bg-green-500 rounded-lg">
+                <MessageSquare className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-white">WhatsApp Bot AI</h1>
+                <p className="text-xs text-gray-300">Sistema Inteligente de Automação</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              <Link href="/auth/login?type=user">
+                <Button variant="outline" size="sm" className="text-white border-white/20 hover:bg-white/10">
+                  <User className="w-4 h-4 mr-2" />
+                  Usuário
+                </Button>
+              </Link>
+              <Link href="/admin/login">
+                <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                  <UserCog className="w-4 h-4 mr-2" />
+                  Admin
+                </Button>
+              </Link>
+            </div>
+          </div>
         </div>
-        
-        <div className="flex items-center gap-2">
-          <Button onClick={handleRefresh} variant="outline" size="sm">
-            <RefreshCcw className="h-4 w-4 mr-2" />
-            Atualizar
-          </Button>
-          <Link href="/qr">
-            <Button variant="outline" size="sm">
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Ver QR Code
-            </Button>
-          </Link>
-        </div>
-      </div>
+      </header>
 
-      {/* WhatsApp Instances Management */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-xl font-semibold">Instâncias WhatsApp</h2>
-            <p className="text-sm text-muted-foreground">
-              Gerencie múltiplas conexões WhatsApp
+      {/* Hero Section */}
+      <section className="py-20 lg:py-32">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <div className="flex items-center justify-center mb-8">
+              <Badge className="bg-green-500/20 text-green-300 border-green-500/30 px-4 py-1">
+                <Star className="w-4 h-4 mr-2" />
+                Sistema de Automação WhatsApp
+              </Badge>
+            </div>
+            
+            <h1 className="text-5xl lg:text-7xl font-bold text-white mb-8">
+              Automatize seu
+              <span className="bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
+                {' '}WhatsApp
+              </span>
+            </h1>
+            
+            <p className="text-xl text-gray-300 mb-12 max-w-3xl mx-auto">
+              Sistema completo de automação WhatsApp com inteligência artificial avançada, 
+              dashboard moderno e controle total sobre suas conversas.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link href="/admin/login">
+                <Button size="lg" className="bg-green-600 hover:bg-green-700 text-lg px-8 py-3">
+                  Começar Agora
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </Button>
+              </Link>
+              <Button variant="outline" size="lg" className="text-white border-white/20 hover:bg-white/10 text-lg px-8 py-3">
+                Ver Demonstração
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-20 bg-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-white mb-4">
+              Recursos Avançados
+            </h2>
+            <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+              Tecnologia de ponta para automatizar e otimizar suas comunicações no WhatsApp
             </p>
           </div>
-          <Button 
-            onClick={handleCreateInstance} 
-            disabled={isCreatingInstance}
-            className="bg-green-600 hover:bg-green-700"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            {isCreatingInstance ? 'Criando...' : 'Nova Instância'}
-          </Button>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {instances.map((instance) => (
-            <Card key={instance.id} className="relative">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Smartphone className="h-4 w-4" />
-                    <CardTitle className="text-sm">{instance.name}</CardTitle>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {features.map((feature, index) => (
+              <Card 
+                key={index}
+                className="bg-white/10 border-white/20 hover:bg-white/15 transition-all cursor-pointer"
+                onMouseEnter={() => setActiveFeature(index)}
+              >
+                <CardHeader className="text-center">
+                  <div className="flex items-center justify-center w-12 h-12 bg-green-500/20 rounded-lg mx-auto mb-4">
+                    <feature.icon className="w-6 h-6 text-green-400" />
                   </div>
-                  <Badge 
-                    variant={
-                      instance.status === 'connected' ? 'success' : 
-                      instance.status === 'qr_generated' ? 'warning' :
-                      instance.status === 'starting' ? 'info' :
-                      'error'
-                    }
-                    className="text-xs"
-                  >
-                    {instance.status === 'connected' ? 'Conectado' :
-                     instance.status === 'qr_generated' ? 'QR Gerado' :
-                     instance.status === 'starting' ? 'Iniciando...' :
-                     'Desconectado'}
-                  </Badge>
-                </div>
-                {instance.phoneNumber && (
-                  <CardDescription className="text-xs">
-                    {instance.phoneNumber}
-                  </CardDescription>
-                )}
-              </CardHeader>
-              
-              <CardContent className="space-y-3">
-                {/* QR Code Preview */}
-                {instance.qrCode && instance.status === 'qr_generated' && (
-                  <div className="bg-white p-2 rounded border">
-                    <div className="flex items-center justify-center overflow-hidden">
-                      <pre className="text-xs leading-none font-mono text-black">
-                        {(instance.qrCode as string)?.split('\n').slice(0, 15).join('\n')}
-                        {instance.qrCode && (instance.qrCode as string).split('\n').length > 15 && '\n...'}
-                      </pre>
-                    </div>
-                  </div>
-                )}
-                
-                {/* Instance Status Info */}
-                <div className="space-y-2 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Status:</span>
-                    <span>{instance.status === 'connected' ? 'Online' : 'Offline'}</span>
-                  </div>
-                  {instance.lastActivity && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Última atividade:</span>
-                      <span>{formatRelativeTime(instance.lastActivity)}</span>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Action Buttons */}
-                <div className="flex flex-wrap gap-2 pt-2">
-                  {instance.status === 'disconnected' && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleGenerateQR(instance.id)}
-                      disabled={instance.isGeneratingQr}
-                      className="flex-1 min-w-0"
-                    >
-                      <QrCode className="h-3 w-3 mr-1" />
-                      {instance.isGeneratingQr ? 'Gerando...' : 'Gerar QR'}
-                    </Button>
-                  )}
-                  
-                  {instance.status === 'qr_generated' && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleStartInstance(instance.id)}
-                      className="flex-1 min-w-0"
-                    >
-                      <Power className="h-3 w-3 mr-1" />
-                      Conectar
-                    </Button>
-                  )}
-                  
-                  {instance.status === 'connected' && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleStopInstance(instance.id)}
-                      className="flex-1 min-w-0"
-                    >
-                      <PowerOff className="h-3 w-3 mr-1" />
-                      Desconectar
-                    </Button>
-                  )}
-                  
-                  {instance.qrCode && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      asChild
-                      className="min-w-0"
-                    >
-                      <Link href={`/qr?instance=${instance.id}`}>
-                        <Eye className="h-3 w-3" />
-                      </Link>
-                    </Button>
-                  )}
-                  
-                  {instance.id !== 'default' && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleDeleteInstance(instance.id)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50 min-w-0"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-
-      {/* Error Messages */}
-      {(statusError || statsError) && (
-        <div className="rounded-lg bg-red-50 dark:bg-red-900/20 p-4 border border-red-200 dark:border-red-800">
-          <div className="flex items-center gap-2 text-red-700 dark:text-red-300">
-            <AlertTriangle className="h-5 w-5" />
-            <span className="font-semibold">Erro de Conexão</span>
+                  <CardTitle className="text-white text-lg">{feature.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-300 text-center text-sm">
+                    {feature.description}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
           </div>
-          <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-            {statusError || statsError}
-          </p>
         </div>
-      )}
+      </section>
 
-      {/* Status and Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <StatusCard
-            status={status}
-            isLoading={statusLoading}
-            onStart={startBot}
-            onStop={stopBot}
-            onRestart={restartBot}
-            onPause={pauseBot}
-            onResume={resumeBot}
-          />
-        </div>
-        
-        {/* Quick QR Code Preview */}
-        <div className="space-y-4">
-          {status?.status === 'qr' && status.qrCode ? (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <MessageCircle className="h-4 w-4" />
-                  QR Code Disponível
-                </CardTitle>
-                <CardDescription>
-                  Escaneie para conectar
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="bg-white p-2 rounded border mb-3">
-                  <pre className="qr-code text-xs leading-none">
-                    {status.qrCode.split('\n').slice(0, 20).join('\n')}
-                    {status.qrCode.split('\n').length > 20 && '\n...'}
-                  </pre>
-                </div>
-                <Link href="/qr">
-                  <Button size="sm" className="w-full">
-                    Ver QR Code Completo
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Sistema Status</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Bot Status</span>
-                  <Badge variant={status?.status === 'connected' ? 'success' : 'error'}>
-                    {status?.status === 'connected' ? 'Online' : 'Offline'}
-                  </Badge>
-                </div>
-                
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Última Atualização</span>
-                  <span className="text-xs">
-                    {status?.lastUpdate ? formatRelativeTime(status.lastUpdate) : 'N/A'}
-                  </span>
-                </div>
-                
-                {status?.user && (
-                  <div className="pt-2 border-t">
-                    <p className="text-xs font-medium">{status.user.name}</p>
-                    <p className="text-xs text-muted-foreground">{status.user.number}</p>
+      {/* Access Plans */}
+      <section className="py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-white mb-4">
+              Escolha seu Nível de Acesso
+            </h2>
+            <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+              Sistema com diferentes níveis de permissão para atender suas necessidades
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {plans.map((plan, index) => (
+              <Card 
+                key={index}
+                className={`relative bg-white/10 border-white/20 hover:bg-white/15 transition-all ${
+                  plan.popular ? 'ring-2 ring-green-500' : ''
+                }`}
+              >
+                {plan.popular && (
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                    <Badge className="bg-green-500 text-white px-4 py-1">
+                      Recomendado
+                    </Badge>
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      </div>
-
-      {/* Statistics Cards */}
-      <div>
-        <h2 className="text-xl font-semibold mb-4">Estatísticas</h2>
-        <StatsCards stats={stats} isLoading={statsLoading} />
-      </div>
-
-      {/* Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5" />
-              Atividade Recente
-            </CardTitle>
-            <CardDescription>
-              Últimas ações do sistema
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {statusLoading ? (
-              <div className="space-y-3">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <Skeleton className="h-2 w-2 rounded-full" />
-                    <Skeleton className="h-4 flex-1" />
-                    <Skeleton className="h-4 w-16" />
+                
+                <CardHeader className="text-center pb-4">
+                  <div className="flex items-center justify-center w-16 h-16 bg-green-500/20 rounded-lg mx-auto mb-4">
+                    <plan.icon className="w-8 h-8 text-green-400" />
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 text-sm">
-                  <div className="h-2 w-2 rounded-full bg-green-500" />
-                  <span className="flex-1">Sistema iniciado</span>
-                  <span className="text-xs text-muted-foreground">2min</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <div className="h-2 w-2 rounded-full bg-blue-500" />
-                  <span className="flex-1">WebSocket conectado</span>
-                  <span className="text-xs text-muted-foreground">5min</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <div className="h-2 w-2 rounded-full bg-yellow-500" />
-                  <span className="flex-1">QR Code gerado</span>
-                  <span className="text-xs text-muted-foreground">10min</span>
-                </div>
-                <div className="text-center pt-4">
-                  <Link href="/logs">
-                    <Button variant="outline" size="sm">
-                      Ver Todos os Logs
+                  <CardTitle className="text-2xl text-white">{plan.name}</CardTitle>
+                  <CardDescription className="text-gray-300">
+                    {plan.description}
+                  </CardDescription>
+                </CardHeader>
+                
+                <CardContent className="space-y-6">
+                  <ul className="space-y-3">
+                    {plan.features.map((feature, featureIndex) => (
+                      <li key={featureIndex} className="flex items-center text-gray-300">
+                        <CheckCircle2 className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                  
+                  <Link href={plan.href} className="block">
+                    <Button 
+                      variant={plan.buttonVariant}
+                      className={`w-full py-3 ${
+                        plan.buttonVariant === 'default' 
+                          ? 'bg-green-600 hover:bg-green-700' 
+                          : 'text-white border-white/20 hover:bg-white/10'
+                      }`}
+                    >
+                      {plan.buttonText}
+                      <ChevronRight className="w-4 h-4 ml-2" />
                     </Button>
                   </Link>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Performance
-            </CardTitle>
-            <CardDescription>
-              Métricas de desempenho
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {statsLoading ? (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-2 w-full" />
-                </div>
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-40" />
-                  <Skeleton className="h-2 w-full" />
-                </div>
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-28" />
-                  <Skeleton className="h-2 w-full" />
-                </div>
+      {/* Technology Section */}
+      <section className="py-20 bg-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-white mb-4">
+              Tecnologia de Ponta
+            </h2>
+            <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+              Stack moderno e seguro para máxima performance e confiabilidade
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="flex items-center justify-center w-16 h-16 bg-blue-500/20 rounded-lg mx-auto mb-4">
+                <Brain className="w-8 h-8 text-blue-400" />
               </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Tempo de Resposta</span>
-                    <span className="font-medium">
-                      {stats?.averageResponseTime?.toFixed(1) || 0}s
-                    </span>
-                  </div>
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-green-500 transition-all"
-                      style={{ 
-                        width: `${Math.min((stats?.averageResponseTime || 0) / 10 * 100, 100)}%` 
-                      }}
-                    />
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Mensagens por Hora</span>
-                    <span className="font-medium">
-                      {stats?.messagesLastHour || 0}
-                    </span>
-                  </div>
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-blue-500 transition-all"
-                      style={{ 
-                        width: `${Math.min((stats?.messagesLastHour || 0) / 100 * 100, 100)}%` 
-                      }}
-                    />
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Conversas Ativas</span>
-                    <span className="font-medium">
-                      {stats?.activeConversations || 0}
-                    </span>
-                  </div>
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-purple-500 transition-all"
-                      style={{ 
-                        width: `${Math.min((stats?.activeConversations || 0) / 50 * 100, 100)}%` 
-                      }}
-                    />
-                  </div>
-                </div>
+              <h3 className="text-xl font-semibold text-white mb-2">IA Avançada</h3>
+              <p className="text-gray-300">
+                GPT-4o-mini, Groq Whisper Large-v3 para processamento inteligente
+              </p>
+            </div>
+            
+            <div className="text-center">
+              <div className="flex items-center justify-center w-16 h-16 bg-green-500/20 rounded-lg mx-auto mb-4">
+                <Smartphone className="w-8 h-8 text-green-400" />
               </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+              <h3 className="text-xl font-semibold text-white mb-2">WhatsApp API</h3>
+              <p className="text-gray-300">
+                Integração nativa com Baileys e Evolution API para máxima compatibilidade
+              </p>
+            </div>
+            
+            <div className="text-center">
+              <div className="flex items-center justify-center w-16 h-16 bg-purple-500/20 rounded-lg mx-auto mb-4">
+                <Lock className="w-8 h-8 text-purple-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-white mb-2">Segurança</h3>
+              <p className="text-gray-300">
+                JWT, bcrypt, rate limiting e roles granulares para máxima proteção
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-white/10 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center justify-center w-8 h-8 bg-green-500 rounded-lg">
+                <MessageSquare className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="text-white font-semibold">WhatsApp Bot AI</p>
+                <p className="text-xs text-gray-400">Sistema de Automação Inteligente</p>
+              </div>
+            </div>
+            
+            <div className="text-sm text-gray-400">
+              © 2025 WhatsApp Bot AI. Todos os direitos reservados.
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

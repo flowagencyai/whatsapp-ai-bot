@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, RefreshCcw, Smartphone, CheckCircle, AlertCircle, LogOut } from 'lucide-react';
 import { useBotStatus } from '@/hooks/useBotStatus';
 import { formatRelativeTime } from '@/lib/utils';
+import { SmartBackButton } from '@/components/ui/smart-back-button';
 import Link from 'next/link';
 
 export default function QRCodePage() {
@@ -60,11 +61,7 @@ export default function QRCodePage() {
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex items-center gap-4">
-        <Link href="/">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </Link>
+        <SmartBackButton />
         
         <div className="flex-1">
           <h1 className="text-3xl font-bold tracking-tight">QR Code</h1>

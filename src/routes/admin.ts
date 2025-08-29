@@ -1,8 +1,9 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { adminConfigManager } from '@/services/admin/configManager';
-import { adminStatsManager } from '@/services/admin/statsManager';
-import { AdminApiResponse, AdminConfigUpdate, AdminBulkAction } from '@/types/admin';
-import { logger } from '@/utils/logger';
+import { adminConfigManager } from '../services/admin/configManager.js';
+import { adminStatsManager } from '../services/admin/statsManager.js';
+import { AdminApiResponse, AdminConfigUpdate, AdminBulkAction } from '../types/admin.js';
+import { authenticate, requirePermission, requireAnyPermission } from '../middleware/auth.js';
+import { logger } from '../utils/logger.js';
 
 /**
  * Admin API Routes
@@ -17,10 +18,14 @@ const adminMiddleware = (req: Request, res: Response, next: NextFunction) => {
     method: req.method,
     path: req.path,
     ip: req.ip,
-    userAgent: req.get('User-Agent')
+    userAgent: req.get('User-Agent'),
+    user: req.user ? { id: req.user.id, username: req.user.username, role: req.user.role } : undefined
   });
   next();
 };
+
+// Apply authentication to all admin routes
+adminRouter.use(authenticate);
 
 // Error handler for admin routes
 const adminErrorHandler = (error: Error, req: Request, res: Response, next: NextFunction) => {
@@ -46,7 +51,7 @@ adminRouter.use(adminMiddleware);
  * GET /admin/config
  * Get current admin configuration
  */
-adminRouter.get('/config', async (req: Request, res: Response) => {
+adminRouter.get('/config', requirePermission('config:read'), async (req: Request, res: Response) => {
   try {
     const config = adminConfigManager.getConfig();
     
@@ -66,7 +71,7 @@ adminRouter.get('/config', async (req: Request, res: Response) => {
  * PUT /admin/config
  * Update admin configuration
  */
-adminRouter.put('/config', async (req: Request, res: Response) => {
+adminRouter.put('/config', requirePermission('config:write'), async (req: Request, res: Response) => {
   try {
     const update: AdminConfigUpdate = req.body;
     
@@ -99,7 +104,7 @@ adminRouter.put('/config', async (req: Request, res: Response) => {
  * PUT /admin/config/:section
  * Update entire configuration section
  */
-adminRouter.put('/config/:section', async (req: Request, res: Response) => {
+adminRouter.put('/config/:section', requirePermission('config:write'), async (req: Request, res: Response) => {
   try {
     const { section } = req.params;
     const data = req.body.data;
@@ -136,7 +141,7 @@ adminRouter.put('/config/:section', async (req: Request, res: Response) => {
  * POST /admin/config/reset
  * Reset configuration to defaults
  */
-adminRouter.post('/config/reset', async (req: Request, res: Response) => {
+adminRouter.post('/config/reset', requirePermission('config:reset'), async (req: Request, res: Response) => {
   try {
     const admin = req.body.admin || 'admin-interface';
     const resetConfig = await adminConfigManager.resetToDefaults(admin);
@@ -158,7 +163,7 @@ adminRouter.post('/config/reset', async (req: Request, res: Response) => {
  * POST /admin/config/backup
  * Create configuration backup
  */
-adminRouter.post('/config/backup', async (req: Request, res: Response) => {
+adminRouter.post('/config/backup', requirePermission('config:backup'), async (req: Request, res: Response) => {
   try {
     const backupPath = await adminConfigManager.createBackup();
 
@@ -179,7 +184,7 @@ adminRouter.post('/config/backup', async (req: Request, res: Response) => {
  * GET /admin/stats
  * Get comprehensive system statistics
  */
-adminRouter.get('/stats', async (req: Request, res: Response) => {
+adminRouter.get('/stats', requirePermission('stats:read'), async (req: Request, res: Response) => {
   try {
     const stats = await adminStatsManager.getSystemStats();
 
@@ -199,7 +204,7 @@ adminRouter.get('/stats', async (req: Request, res: Response) => {
  * GET /admin/users
  * Get all active users with their information
  */
-adminRouter.get('/users', async (req: Request, res: Response) => {
+adminRouter.get('/users', requirePermission('users:read'), async (req: Request, res: Response) => {
   try {
     const users = await adminStatsManager.getActiveUsers();
 
@@ -219,7 +224,7 @@ adminRouter.get('/users', async (req: Request, res: Response) => {
  * GET /admin/users/:userId/memory
  * Get memory information for specific user
  */
-adminRouter.get('/users/:userId/memory', async (req: Request, res: Response) => {
+adminRouter.get('/users/:userId/memory', requirePermission('memory:read'), async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     const memory = await adminStatsManager.getUserMemory(userId);
@@ -248,7 +253,7 @@ adminRouter.get('/users/:userId/memory', async (req: Request, res: Response) => 
  * DELETE /admin/users/:userId/memory
  * Clear memory for specific user
  */
-adminRouter.delete('/users/:userId/memory', async (req: Request, res: Response) => {
+adminRouter.delete('/users/:userId/memory', requirePermission('memory:clear'), async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     const admin = req.body.admin || 'admin-interface';
@@ -271,7 +276,7 @@ adminRouter.delete('/users/:userId/memory', async (req: Request, res: Response) 
  * POST /admin/users/:userId/pause
  * Pause specific user
  */
-adminRouter.post('/users/:userId/pause', async (req: Request, res: Response) => {
+adminRouter.post('/users/:userId/pause', requirePermission('users:write'), async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     const { duration = 3600000 } = req.body; // Default 1 hour
@@ -295,7 +300,7 @@ adminRouter.post('/users/:userId/pause', async (req: Request, res: Response) => 
  * POST /admin/users/:userId/resume
  * Resume specific user
  */
-adminRouter.post('/users/:userId/resume', async (req: Request, res: Response) => {
+adminRouter.post('/users/:userId/resume', requirePermission('users:write'), async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     const admin = req.body.admin || 'admin-interface';
@@ -318,7 +323,7 @@ adminRouter.post('/users/:userId/resume', async (req: Request, res: Response) =>
  * POST /admin/bulk-actions
  * Perform bulk actions on users
  */
-adminRouter.post('/bulk-actions', async (req: Request, res: Response) => {
+adminRouter.post('/bulk-actions', requirePermission('users:bulk_actions'), async (req: Request, res: Response) => {
   try {
     const action: AdminBulkAction = req.body;
     const admin = req.body.admin || 'admin-interface';
