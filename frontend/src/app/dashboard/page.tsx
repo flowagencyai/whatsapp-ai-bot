@@ -30,14 +30,14 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { formatRelativeTime, extractNameFromJid } from '@/lib/utils';
-import { useConfirm, ConfirmProvider } from '@/components/ui/confirm-dialog';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
-function UserDashboardContent() {
+export default function UserDashboardPage() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const { status, isLoading: botLoading, refetch, pauseBot, resumeBot } = useBotStatus();
   const { conversations, isLoading: conversationsLoading, refreshConversations } = useConversations();
-  const confirm = useConfirm();
+  const { confirm } = useConfirm();
   const [activeTab, setActiveTab] = useState('overview');
   const [searchTerm, setSearchTerm] = useState('');
   const [isClient, setIsClient] = useState(false);
@@ -629,13 +629,5 @@ function UserDashboardContent() {
         </main>
       </div>
     </ProtectedRoute>
-  );
-}
-
-export default function UserDashboardPage() {
-  return (
-    <ConfirmProvider>
-      <UserDashboardContent />
-    </ConfirmProvider>
   );
 }
