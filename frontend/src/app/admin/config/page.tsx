@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button';
 import { LoadingButton } from '@/components/ui/loading-button';
 import { useToast } from '@/components/ui/toast';
 import { useConfirm } from '@/components/ui/confirm-dialog';
+import { ConfigWriteRoute } from '@/components/auth/ProtectedRoute';
 import { api } from '@/lib/api';
-import { AdminConfig } from '@/types';
+import type { AdminConfig } from '@/types';
 import { 
   Settings, 
   Brain,
@@ -18,10 +19,20 @@ import {
   Download,
   Upload,
   AlertTriangle,
-  CheckCircle2
+  CheckCircle2,
+  Shield
 } from 'lucide-react';
 
 export default function AdminConfig() {
+  // Render with security protection wrapper
+  return (
+    <ConfigWriteRoute>
+      <AdminConfigContent />
+    </ConfigWriteRoute>
+  );
+}
+
+function AdminConfigContent() {
   const [config, setConfig] = useState<AdminConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -105,43 +116,44 @@ export default function AdminConfig() {
   };
 
   const handleReset = async () => {
-    confirm({
+    const confirmed = await confirm({
       title: 'Resetar Configuração',
       description: 'Tem certeza que deseja resetar toda a configuração para os valores padrão? Esta ação não pode ser desfeita.',
       confirmText: 'Sim, resetar',
       cancelText: 'Cancelar',
-      variant: 'destructive',
-      onConfirm: async () => {
-        try {
-          setResetting(true);
-          const response = await api.resetAdminConfig('admin-interface');
-          
-          if (response.success && response.data) {
-            setConfig(response.data);
-            setTempConfig(response.data);
-            setHasChanges(false);
-            
-            addToast({
-              type: 'success',
-              title: 'Configuração resetada!',
-              description: 'Todas as configurações foram restauradas para os valores padrão.',
-              duration: 4000
-            });
-          } else {
-            throw new Error(response.error || 'Failed to reset configuration');
-          }
-        } catch (err) {
-          addToast({
-            type: 'error',
-            title: 'Erro ao resetar configuração',
-            description: String(err),
-            duration: 6000
-          });
-        } finally {
-          setResetting(false);
-        }
-      }
+      variant: 'destructive'
     });
+
+    if (confirmed) {
+      try {
+        setResetting(true);
+        const response = await api.resetAdminConfig('admin-interface');
+        
+        if (response.success && response.data) {
+          setConfig(response.data);
+          setTempConfig(response.data);
+          setHasChanges(false);
+          
+          addToast({
+            type: 'success',
+            title: 'Configuração resetada!',
+            description: 'Todas as configurações foram restauradas para os valores padrão.',
+            duration: 4000
+          });
+        } else {
+          throw new Error(response.error || 'Failed to reset configuration');
+        }
+      } catch (err) {
+        addToast({
+          type: 'error',
+          title: 'Erro ao resetar configuração',
+          description: String(err),
+          duration: 6000
+        });
+      } finally {
+        setResetting(false);
+      }
+    }
   };
 
   const handleBackup = async () => {
@@ -228,8 +240,17 @@ export default function AdminConfig() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Configuration</h1>
-          <p className="text-gray-600">Manage bot settings and behavior</p>
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center">
+            <Shield className="w-8 h-8 text-red-600 mr-3" />
+            Configuração do Sistema
+          </h1>
+          <p className="text-gray-600">Gerencie configurações e comportamento do bot</p>
+          <div className="mt-2">
+            <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+              <Shield className="w-3 h-3 mr-1" />
+              Área Restrita - Requer permissões especiais
+            </div>
+          </div>
         </div>
         
         <div className="flex space-x-2">

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { SuperAdminRoute } from '@/components/auth/ProtectedRoute';
 import { api } from '@/lib/api';
 import { 
   Wrench,
@@ -20,6 +21,14 @@ import {
 } from 'lucide-react';
 
 export default function AdminTools() {
+  return (
+    <SuperAdminRoute>
+      <AdminToolsContent />
+    </SuperAdminRoute>
+  );
+}
+
+function AdminToolsContent() {
   const [loading, setLoading] = useState<{ [key: string]: boolean }>({});
   const [results, setResults] = useState<{ [key: string]: any }>({});
 

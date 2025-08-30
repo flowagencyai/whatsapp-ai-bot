@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { LoadingButton } from '@/components/ui/loading-button';
 import { useToast } from '@/components/ui/toast';
 import { useConfirm } from '@/components/ui/confirm-dialog';
+import { UserManagementRoute } from '@/components/auth/ProtectedRoute';
 import { api } from '@/lib/api';
 import { AdminUser, AdminMemoryInfo } from '@/types';
 import { 
@@ -23,6 +24,14 @@ import {
 } from 'lucide-react';
 
 export default function AdminUsers() {
+  return (
+    <UserManagementRoute>
+      <AdminUsersContent />
+    </UserManagementRoute>
+  );
+}
+
+function AdminUsersContent() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -150,58 +159,58 @@ export default function AdminUsers() {
       resume_users: `Tem certeza que deseja reativar ${selectedUserIds.length} usuário${selectedUserIds.length > 1 ? 's' : ''}?`
     };
 
-    confirm({
+    const confirmed = await confirm({
       title: actionTitles[action],
       description: actionDescriptions[action],
       confirmText: 'Sim, executar',
       cancelText: 'Cancelar',
-      variant: action === 'clear_memory' ? 'destructive' : 'default',
-      onConfirm: async () => {
+      variant: action === 'clear_memory' ? 'destructive' : 'default'
+    });
 
-        try {
-          setActionLoading('bulk');
-          const response = await api.performBulkAction({
-            action,
-            userIds: selectedUserIds,
-            duration: action === 'pause_users' ? 3600000 : undefined,
-            admin: 'admin-interface'
+    if (confirmed) {
+      try {
+        setActionLoading('bulk');
+        const response = await api.performBulkAction({
+          action,
+          userIds: selectedUserIds,
+          duration: action === 'pause_users' ? 3600000 : undefined,
+          admin: 'admin-interface'
+        });
+
+        if (response.success) {
+          await loadUsers();
+          
+          const successMessages = {
+            clear_memory: 'Memória limpa para todos os usuários!',
+            pause_users: 'Todos os usuários foram pausados!',
+            resume_users: 'Todos os usuários foram reativados!'
+          };
+          
+          addToast({
+            type: 'success',
+            title: successMessages[action],
+            description: `Ação executada com sucesso para ${selectedUserIds.length} usuário${selectedUserIds.length > 1 ? 's' : ''}.`,
+            duration: 4000
           });
-
-          if (response.success) {
-            await loadUsers();
-            
-            const successMessages = {
-              clear_memory: 'Memória limpa para todos os usuários!',
-              pause_users: 'Todos os usuários foram pausados!',
-              resume_users: 'Todos os usuários foram reativados!'
-            };
-            
-            addToast({
-              type: 'success',
-              title: successMessages[action],
-              description: `Ação executada com sucesso para ${selectedUserIds.length} usuário${selectedUserIds.length > 1 ? 's' : ''}.`,
-              duration: 4000
-            });
-          } else {
-            addToast({
-              type: 'error',
-              title: 'Erro na ação em massa',
-              description: response.error || 'Erro desconhecido',
-              duration: 5000
-            });
-          }
-        } catch (err) {
+        } else {
           addToast({
             type: 'error',
             title: 'Erro na ação em massa',
-            description: String(err),
+            description: response.error || 'Erro desconhecido',
             duration: 5000
           });
-        } finally {
-          setActionLoading(null);
         }
+      } catch (err) {
+        addToast({
+          type: 'error',
+          title: 'Erro na ação em massa',
+          description: String(err),
+          duration: 5000
+        });
+      } finally {
+        setActionLoading(null);
       }
-    });
+    }
   };
 
   const formatDate = (dateString: string) => {

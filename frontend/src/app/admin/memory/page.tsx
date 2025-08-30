@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { AdminRoute } from '@/components/auth/ProtectedRoute';
 import { api } from '@/lib/api';
 import { AdminUser, AdminMemoryInfo } from '@/types';
 import { 
@@ -19,6 +20,14 @@ import {
 } from 'lucide-react';
 
 export default function AdminMemory() {
+  return (
+    <AdminRoute>
+      <AdminMemoryContent />
+    </AdminRoute>
+  );
+}
+
+function AdminMemoryContent() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<AdminUser[]>([]);
   const [selectedMemory, setSelectedMemory] = useState<AdminMemoryInfo | null>(null);

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { SuperAdminRoute } from '@/components/auth/ProtectedRoute';
 import { api } from '@/lib/api';
 import { AdminStats } from '@/types';
 import { 
@@ -22,6 +23,14 @@ import {
 } from 'lucide-react';
 
 export default function AdminSystem() {
+  return (
+    <SuperAdminRoute>
+      <AdminSystemContent />
+    </SuperAdminRoute>
+  );
+}
+
+function AdminSystemContent() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [health, setHealth] = useState<any>(null);
   const [loading, setLoading] = useState(true);

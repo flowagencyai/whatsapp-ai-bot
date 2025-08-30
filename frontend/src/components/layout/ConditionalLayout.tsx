@@ -24,12 +24,18 @@ const SIMPLE_LAYOUT_ROUTES = [
   '/dashboard' // Dashboard de usuário comum
 ];
 
-// Rotas administrativas que devem usar layout completo
+// Rotas administrativas que usam seu próprio layout interno
 const ADMIN_ROUTES = [
-  '/admin',
+  '/admin/dashboard',
   '/admin/config',
   '/admin/users', 
-  '/admin/logs',
+  '/admin/system',
+  '/admin/memory',
+  '/admin/tools'
+];
+
+// Rotas que devem usar layout completo com sidebar do usuário comum
+const USER_DASHBOARD_ROUTES = [
   '/qr',
   '/conversations',
   '/settings'
@@ -53,9 +59,15 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
     return <>{children}</>;
   }
 
-  // Rotas administrativas usam layout completo com sidebar
-  const isAdminRoute = ADMIN_ROUTES.some(route => pathname.startsWith(route));
+  // Rotas administrativas usam seu próprio layout interno (sem sidebar externo)
+  const isAdminRoute = ADMIN_ROUTES.some(route => pathname === route);
   if (isAdminRoute) {
+    return <>{children}</>;
+  }
+
+  // Rotas do dashboard do usuário comum usam layout completo com sidebar
+  const isUserDashboardRoute = USER_DASHBOARD_ROUTES.some(route => pathname.startsWith(route));
+  if (isUserDashboardRoute) {
     return (
       <WebSocketProvider>
         <div className="flex h-screen overflow-hidden">

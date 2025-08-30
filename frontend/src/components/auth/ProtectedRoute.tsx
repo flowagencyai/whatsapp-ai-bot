@@ -26,24 +26,44 @@ export function ProtectedRoute({
   useEffect(() => {
     if (loading) return; // Still loading, don't redirect yet
 
+    // Security check 1: User must be authenticated
     if (!isAuthenticated) {
+      console.warn('[Security] Unauthenticated access attempt blocked');
       router.replace(redirectTo);
       return;
     }
 
-    // Check role requirement
-    if (requiredRole && !hasRole(requiredRole)) {
+    // Security check 2: User account must be active
+    if (user && !user.isActive) {
+      console.warn('[Security] Inactive user access attempt blocked:', user.username);
       router.replace('/admin/unauthorized');
       return;
     }
 
-    // Check permission requirements
+    // Security check 3: Role requirement validation
+    if (requiredRole && !hasRole(requiredRole)) {
+      console.warn('[Security] Insufficient role access attempt blocked:', {
+        required: requiredRole,
+        current: user?.role,
+        user: user?.username
+      });
+      router.replace('/admin/unauthorized');
+      return;
+    }
+
+    // Security check 4: Permission requirements validation
     if (requiredPermissions.length > 0) {
       const hasRequiredPermissions = requireAnyPermission
         ? hasAnyPermission(requiredPermissions)
         : requiredPermissions.every(permission => hasPermission(permission));
 
       if (!hasRequiredPermissions) {
+        console.warn('[Security] Insufficient permissions access attempt blocked:', {
+          required: requiredPermissions,
+          requireAny: requireAnyPermission,
+          userPermissions: user?.permissions,
+          user: user?.username
+        });
         router.replace('/admin/unauthorized');
         return;
       }
@@ -57,6 +77,7 @@ export function ProtectedRoute({
     hasPermission,
     hasRole,
     hasAnyPermission,
+    user,
     router,
     redirectTo
   ]);
@@ -76,11 +97,18 @@ export function ProtectedRoute({
     return null; // Will redirect
   }
 
-  // Check permissions after loading
+  // Final security checks before rendering
+  // Additional check for user account status
+  if (user && !user.isActive) {
+    return null; // Will redirect to unauthorized
+  }
+
+  // Role validation check
   if (requiredRole && !hasRole(requiredRole)) {
     return null; // Will redirect to unauthorized
   }
 
+  // Permission validation check
   if (requiredPermissions.length > 0) {
     const hasRequiredPermissions = requireAnyPermission
       ? hasAnyPermission(requiredPermissions)

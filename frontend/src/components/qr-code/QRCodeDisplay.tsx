@@ -5,9 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { RefreshCcw, Smartphone, Copy, Check } from 'lucide-react';
+import { RefreshCcw, Smartphone, Copy, Check, Unplug } from 'lucide-react';
 import { copyToClipboard } from '@/lib/utils';
 import { useBotStatus } from '@/hooks/useBotStatus';
+import { api } from '@/lib/api';
+import { useToast } from '@/components/ui/toast';
 
 interface QRCodeDisplayProps {
   qrCode?: string;
@@ -31,8 +33,10 @@ export function QRCodeDisplay({
   size = 'md',
   showInstructions = true,
 }: QRCodeDisplayProps) {
-  const { status, isLoading: hookIsLoading } = useBotStatus();
+  const { status, isLoading: hookIsLoading, refetch, disconnect } = useBotStatus();
   const [copySuccess, setCopySuccess] = useState(false);
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
+  const { addToast } = useToast();
 
   const isLoading = propIsLoading || hookIsLoading;
   const displayQrCode = qrCode || status?.qrCodeVisual || status?.qrCode;
@@ -52,6 +56,44 @@ export function QRCodeDisplay({
   const handleRefresh = () => {
     if (onRefresh) {
       onRefresh();
+    } else {
+      refetch?.();
+    }
+  };
+
+  const handleDisconnect = async () => {
+    try {
+      setIsDisconnecting(true);
+      
+      // Usar o método correto do useBotStatus
+      const success = await disconnect();
+      
+      if (success) {
+        addToast({
+          type: 'success',
+          title: 'WhatsApp Desconectado',
+          description: 'O bot foi desconectado com sucesso. Um novo QR Code será gerado.',
+          duration: 4000
+        });
+        
+        // Atualizar status após desconexão
+        setTimeout(() => {
+          refetch?.();
+          if (onRefresh) onRefresh();
+        }, 1500);
+      } else {
+        throw new Error('Falha na desconexão');
+      }
+    } catch (error) {
+      console.error('Erro ao desconectar:', error);
+      addToast({
+        type: 'error',
+        title: 'Erro ao Desconectar',
+        description: 'Não foi possível desconectar o WhatsApp. Tente novamente.',
+        duration: 5000
+      });
+    } finally {
+      setIsDisconnecting(false);
     }
   };
 
@@ -76,22 +118,56 @@ export function QRCodeDisplay({
   }
 
   if (!displayQrCode && !qrCodeImage) {
+    const isConnected = status?.status === 'connected';
+    
     return (
       <Card className="w-full max-w-2xl mx-auto">
         <CardHeader className="text-center">
           <CardTitle className="flex items-center justify-center gap-2">
             <Smartphone className="h-6 w-6" />
-            QR Code não disponível
+            {isConnected ? 'WhatsApp Conectado' : 'QR Code não disponível'}
           </CardTitle>
           <CardDescription>
-            O bot está conectado ou o QR Code ainda não foi gerado.
+            {isConnected 
+              ? 'O bot está conectado e funcionando. Use o botão abaixo para desconectar e gerar um novo QR Code.' 
+              : 'O QR Code ainda não foi gerado ou expirou.'}
           </CardDescription>
+          <div className="flex justify-center mt-2">
+            {isConnected ? (
+              <Badge variant="success">Conectado</Badge>
+            ) : (
+              <Badge variant="secondary">Desconectado</Badge>
+            )}
+          </div>
         </CardHeader>
-        <CardContent className="text-center">
-          <Button onClick={handleRefresh} variant="outline">
-            <RefreshCcw className="h-4 w-4 mr-2" />
-            Tentar Novamente
-          </Button>
+        <CardContent className="text-center space-y-3">
+          <div className="flex justify-center gap-2">
+            {isConnected ? (
+              <Button 
+                onClick={handleDisconnect} 
+                variant="destructive"
+                disabled={isDisconnecting}
+              >
+                <Unplug className="h-4 w-4 mr-2" />
+                {isDisconnecting ? 'Desconectando...' : 'Desconectar WhatsApp'}
+              </Button>
+            ) : (
+              <Button onClick={handleRefresh} variant="outline">
+                <RefreshCcw className="h-4 w-4 mr-2" />
+                Gerar QR Code
+              </Button>
+            )}
+          </div>
+          
+          {isConnected && showInstructions && (
+            <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 text-sm">
+              <h4 className="font-semibold text-green-800 dark:text-green-200 mb-2">Bot Funcionando ✓</h4>
+              <p className="text-green-700 dark:text-green-300">
+                Seu bot está conectado e processando mensagens. Para trocar de conta ou reconectar, 
+                clique em "Desconectar WhatsApp" e escaneie o novo QR Code que será gerado.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     );

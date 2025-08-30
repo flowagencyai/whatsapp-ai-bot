@@ -1,20 +1,35 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
-import { ShieldAlert, ArrowLeft, LogOut } from 'lucide-react';
+import { ShieldAlert, ArrowLeft, LogOut, AlertTriangle, Shield } from 'lucide-react';
 
 export default function UnauthorizedPage() {
   const router = useRouter();
   const { user, logout } = useAuth();
+
+  // Security logging - Log unauthorized access attempts
+  useEffect(() => {
+    console.warn('[Security] Unauthorized access attempt detected:', {
+      user: user?.username,
+      role: user?.role,
+      permissions: user?.permissions,
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      url: window.location.href
+    });
+  }, [user]);
 
   const handleGoBack = () => {
     router.back();
   };
 
   const handleLogout = async () => {
+    console.log('[Security] User logout initiated from unauthorized page:', user?.username);
     await logout();
     router.replace('/admin/login');
   };
@@ -35,12 +50,56 @@ export default function UnauthorizedPage() {
         </CardHeader>
         <CardContent className="space-y-6">
           {user && (
-            <div className="p-4 bg-muted/50 rounded-lg space-y-2">
-              <p className="text-sm font-medium">Informações da conta:</p>
-              <div className="text-sm text-muted-foreground space-y-1">
-                <div>Usuário: <span className="font-mono">{user.username}</span></div>
-                <div>Cargo: <span className="font-mono">{user.role}</span></div>
-                <div>Ativo: <span className="font-mono">{user.isActive ? 'Sim' : 'Não'}</span></div>
+            <div className="space-y-4">
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg space-y-3">
+                <div className="flex items-center space-x-2">
+                  <AlertTriangle className="h-4 w-4 text-red-600" />
+                  <p className="text-sm font-medium text-red-800">Tentativa de Acesso Bloqueada</p>
+                </div>
+                <p className="text-xs text-red-700">
+                  Esta ação foi registrada no sistema de segurança.
+                </p>
+              </div>
+              
+              <div className="p-4 bg-muted/50 rounded-lg space-y-3">
+                <div className="flex items-center space-x-2">
+                  <Shield className="h-4 w-4 text-gray-600" />
+                  <p className="text-sm font-medium">Informações da Conta:</p>
+                </div>
+                <div className="text-sm text-muted-foreground space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span>Usuário:</span>
+                    <span className="font-mono">{user.username}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Cargo:</span>
+                    <Badge variant={user.role === 'super_admin' ? 'destructive' : 'secondary'}>
+                      {user.role}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Status:</span>
+                    <Badge variant={user.isActive ? 'default' : 'destructive'}>
+                      {user.isActive ? 'Ativo' : 'Inativo'}
+                    </Badge>
+                  </div>
+                  <div className="pt-2 border-t">
+                    <p className="text-xs text-gray-500 mb-2">Permissões atuais:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {user.permissions && user.permissions.length > 0 ? (
+                        user.permissions.map((permission, index) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            {permission}
+                          </Badge>
+                        ))
+                      ) : (
+                        <Badge variant="secondary" className="text-xs">
+                          Nenhuma permissão
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}

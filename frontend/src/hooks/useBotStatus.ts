@@ -193,8 +193,10 @@ export function useBotStatus(): UseBotStatusReturn {
   useEffect(() => {
     fetchStatus();
     
-    // Dynamic polling interval based on retry count
+    // Dynamic polling interval based on retry count and connection status
     const getPollingInterval = () => {
+      // Se conectado, polling menos frequente
+      if (status?.status === 'connected') return 60000; // 1 minute if connected
       if (retryCount > 3) return 30000; // 30 seconds if many errors
       if (retryCount > 1) return 20000; // 20 seconds if some errors
       return 15000; // 15 seconds normal
@@ -205,7 +207,7 @@ export function useBotStatus(): UseBotStatusReturn {
     }, getPollingInterval());
 
     return () => clearInterval(interval);
-  }, [fetchStatus, retryCount]);
+  }, [fetchStatus, retryCount, status?.status]);
 
   return {
     status,
