@@ -101,13 +101,13 @@ export default function LandingPage() {
             
             <div className="flex items-center space-x-3">
               <Link href="/auth/login?type=user">
-                <Button variant="outline" size="sm" className="text-white border-white/20 hover:bg-white/10">
+                <Button variant="outline" size="sm" className="text-gray-900 bg-white/90 border-white hover:bg-white hover:text-gray-900">
                   <User className="w-4 h-4 mr-2" />
                   Usuário
                 </Button>
               </Link>
               <Link href="/admin/login">
-                <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white">
                   <UserCog className="w-4 h-4 mr-2" />
                   Admin
                 </Button>
@@ -147,8 +147,9 @@ export default function LandingPage() {
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
               </Link>
-              <Button variant="outline" size="lg" className="text-white border-white/20 hover:bg-white/10 text-lg px-8 py-3">
+              <Button variant="outline" size="lg" className="text-white bg-white/10 backdrop-blur-sm border-white/30 hover:bg-white/90 hover:text-gray-900 text-lg px-8 py-3">
                 Ver Demonstração
+                <BarChart3 className="w-5 h-5 ml-2" />
               </Button>
             </div>
           </div>
@@ -244,8 +245,8 @@ export default function LandingPage() {
                       variant={plan.buttonVariant}
                       className={`w-full py-3 ${
                         plan.buttonVariant === 'default' 
-                          ? 'bg-green-600 hover:bg-green-700' 
-                          : 'text-white border-white/20 hover:bg-white/10'
+                          ? 'bg-green-600 hover:bg-green-700 text-white' 
+                          : 'text-gray-900 bg-white/90 border-white hover:bg-white hover:text-gray-900'
                       }`}
                     >
                       {plan.buttonText}

@@ -30,15 +30,19 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { formatRelativeTime, extractNameFromJid } from '@/lib/utils';
+import { useConfirm, ConfirmProvider } from '@/components/ui/confirm-dialog';
 
-export default function UserDashboardPage() {
+function UserDashboardContent() {
   const { user, logout } = useAuth();
   const router = useRouter();
-  const { status, isLoading: botLoading, refetch } = useBotStatus();
+  const { status, isLoading: botLoading, refetch, pauseBot, resumeBot } = useBotStatus();
   const { conversations, isLoading: conversationsLoading, refreshConversations } = useConversations();
+  const confirm = useConfirm();
   const [activeTab, setActiveTab] = useState('overview');
   const [searchTerm, setSearchTerm] = useState('');
   const [isClient, setIsClient] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [isActionLoading, setIsActionLoading] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -47,6 +51,72 @@ export default function UserDashboardPage() {
   const handleLogout = async () => {
     await logout();
     router.replace('/');
+  };
+
+  const handlePauseBot = async () => {
+    const confirmed = await confirm({
+      title: 'Pausar Bot WhatsApp',
+      description: 'O bot será pausado por 1 hora. Durante este período, não responderá a novas mensagens.',
+      confirmText: 'Sim, pausar',
+      cancelText: 'Cancelar',
+      variant: 'default',
+      icon: 'warning'
+    });
+
+    if (confirmed) {
+      setIsActionLoading(true);
+      try {
+        await pauseBot(3600); // 1 hour in seconds
+        setIsPaused(true);
+      } catch (error) {
+        console.error('Erro ao pausar bot:', error);
+      }
+      setIsActionLoading(false);
+    }
+  };
+
+  const handleResumeBot = async () => {
+    const confirmed = await confirm({
+      title: 'Retomar Bot WhatsApp',
+      description: 'O bot voltará a responder mensagens normalmente.',
+      confirmText: 'Sim, retomar',
+      cancelText: 'Cancelar',
+      variant: 'success',
+      icon: 'success'
+    });
+
+    if (confirmed) {
+      setIsActionLoading(true);
+      try {
+        await resumeBot();
+        setIsPaused(false);
+      } catch (error) {
+        console.error('Erro ao retomar bot:', error);
+      }
+      setIsActionLoading(false);
+    }
+  };
+
+  const handleResetContext = async () => {
+    const confirmed = await confirm({
+      title: 'Reset de Contexto',
+      description: 'Esta ação limpará o histórico de conversas de todos os usuários. Não é possível desfazer.',
+      confirmText: 'Sim, limpar',
+      cancelText: 'Cancelar',
+      variant: 'destructive',
+      icon: 'danger'
+    });
+
+    if (confirmed) {
+      setIsActionLoading(true);
+      try {
+        // Implementar reset de contexto via API se disponível
+        alert('Funcionalidade em desenvolvimento');
+      } catch (error) {
+        console.error('Erro ao resetar contexto:', error);
+      }
+      setIsActionLoading(false);
+    }
   };
 
   const filteredConversations = conversations.filter(conv => 
@@ -134,6 +204,11 @@ export default function UserDashboardPage() {
                   <span className={`text-sm font-medium ${botStatusDisplay.color}`}>
                     {botStatusDisplay.text}
                   </span>
+                  {isPaused && (
+                    <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
+                      Pausado
+                    </span>
+                  )}
                 </div>
                 
                 {user && (
@@ -187,6 +262,71 @@ export default function UserDashboardPage() {
           {/* Tab Content */}
           {activeTab === 'overview' && (
             <div className="space-y-6">
+              {/* Bot Controls */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Settings className="w-5 h-5 mr-2 text-blue-500" />
+                    Controles do Bot
+                  </CardTitle>
+                  <CardDescription>
+                    Controle básico do seu bot WhatsApp
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-4">
+                    <Button
+                      onClick={() => refetch()}
+                      variant="outline"
+                      size="sm"
+                      disabled={botLoading}
+                    >
+                      <RefreshCcw className={`h-4 w-4 mr-2 ${botLoading ? 'animate-spin' : ''}`} />
+                      {botLoading ? 'Atualizando...' : 'Atualizar Status'}
+                    </Button>
+                    
+                    {status?.status === 'connected' && (
+                      <>
+                        {!isPaused ? (
+                          <Button
+                            onClick={handlePauseBot}
+                            variant="outline"
+                            size="sm"
+                            disabled={isActionLoading}
+                            className="text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50"
+                          >
+                            <Clock className="h-4 w-4 mr-2" />
+                            {isActionLoading ? 'Pausando...' : 'Pausar Bot'}
+                          </Button>
+                        ) : (
+                          <Button
+                            onClick={handleResumeBot}
+                            variant="outline"
+                            size="sm"
+                            disabled={isActionLoading}
+                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                          >
+                            <Activity className="h-4 w-4 mr-2" />
+                            {isActionLoading ? 'Retomando...' : 'Retomar Bot'}
+                          </Button>
+                        )}
+                        
+                        <Button
+                          onClick={handleResetContext}
+                          variant="outline" 
+                          size="sm"
+                          disabled={isActionLoading}
+                          className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                        >
+                          <RefreshCcw className="h-4 w-4 mr-2" />
+                          Reset Contexto
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* Statistics Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Card>
@@ -489,5 +629,13 @@ export default function UserDashboardPage() {
         </main>
       </div>
     </ProtectedRoute>
+  );
+}
+
+export default function UserDashboardPage() {
+  return (
+    <ConfirmProvider>
+      <UserDashboardContent />
+    </ConfirmProvider>
   );
 }
