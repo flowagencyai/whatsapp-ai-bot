@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { logger } from '../../utils/logger.js';
+import { emailService } from '../email/emailService.js';
 import { 
   User, 
   UserRole, 
@@ -129,6 +130,8 @@ class AuthService {
         role: 'super_admin',
         permissions: ROLE_PERMISSIONS.super_admin,
         isActive: true,
+        emailVerified: true,
+        emailVerifiedAt: new Date().toISOString(),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         loginAttempts: 0,
@@ -146,6 +149,8 @@ class AuthService {
         role: 'viewer',
         permissions: ROLE_PERMISSIONS.viewer,
         isActive: true,
+        emailVerified: true,
+        emailVerifiedAt: new Date().toISOString(),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         loginAttempts: 0,
@@ -389,6 +394,7 @@ class AuthService {
         role: userData.role,
         permissions: ROLE_PERMISSIONS[userData.role],
         isActive: userData.isActive ?? true,
+        emailVerified: false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         loginAttempts: 0,
@@ -399,6 +405,12 @@ class AuthService {
       this.saveUsersDB();
 
       const { password: _, ...userWithoutPassword } = newUser;
+      
+      // Enviar email de verificação
+      if (emailService.isConfigured()) {
+        await emailService.sendVerificationEmail(userData.email, newUser.id, userData.username);
+        logger.info('Verification email sent', { email: userData.email });
+      }
       
       logger.info('New user created', { username: userData.username, role: userData.role });
       
@@ -430,6 +442,72 @@ class AuthService {
     }
 
     return { valid: true };
+  }
+
+  // Email verification
+  public async verifyEmail(token: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const verificationData = emailService.verifyEmailToken(token);
+      
+      if (!verificationData) {
+        return { success: false, message: 'Token inválido ou expirado' };
+      }
+
+      const userIndex = this.usersDB.users.findIndex(u => u.id === verificationData.userId);
+      
+      if (userIndex === -1) {
+        return { success: false, message: 'Usuário não encontrado' };
+      }
+
+      this.usersDB.users[userIndex].emailVerified = true;
+      this.usersDB.users[userIndex].emailVerifiedAt = new Date().toISOString();
+      this.usersDB.users[userIndex].updatedAt = new Date().toISOString();
+      
+      this.saveUsersDB();
+
+      // Enviar email de boas-vindas
+      if (emailService.isConfigured()) {
+        await emailService.sendWelcomeEmail(
+          this.usersDB.users[userIndex].email,
+          this.usersDB.users[userIndex].username
+        );
+      }
+
+      logger.info('Email verified successfully', { 
+        userId: verificationData.userId,
+        email: verificationData.email 
+      });
+
+      return { success: true, message: 'Email verificado com sucesso!' };
+    } catch (error) {
+      logger.error('Error verifying email', { error });
+      return { success: false, message: 'Erro ao verificar email' };
+    }
+  }
+
+  public async resendVerificationEmail(userId: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const user = this.usersDB.users.find(u => u.id === userId);
+      
+      if (!user) {
+        return { success: false, message: 'Usuário não encontrado' };
+      }
+
+      if (user.emailVerified) {
+        return { success: false, message: 'Email já foi verificado' };
+      }
+
+      if (emailService.isConfigured()) {
+        await emailService.sendVerificationEmail(user.email, user.id, user.username);
+        logger.info('Verification email resent', { email: user.email });
+        return { success: true, message: 'Email de verificação reenviado' };
+      }
+
+      return { success: false, message: 'Serviço de email não configurado' };
+    } catch (error) {
+      logger.error('Error resending verification email', { error });
+      return { success: false, message: 'Erro ao reenviar email de verificação' };
+    }
   }
 
   // Permission checking

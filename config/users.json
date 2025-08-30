@@ -38,11 +38,13 @@
         "memory:clear"
       ],
       "isActive": true,
+      "emailVerified": true,
+      "emailVerifiedAt": "2025-08-29T20:00:36.769Z",
       "createdAt": "2025-08-29T20:00:36.769Z",
-      "updatedAt": "2025-08-30T00:48:43.356Z",
+      "updatedAt": "2025-08-30T10:39:16.573Z",
       "loginAttempts": 0,
       "password": "$2b$12$Jrf5yJsduaKJquAsfhh2Keyus4cngKq1e.QBGLY7SHgIba/WqruoW",
-      "lastLogin": "2025-08-30T00:48:43.356Z"
+      "lastLogin": "2025-08-30T10:39:16.573Z"
     },
     {
       "id": "user-1756499111534-gdh5c29qd",
@@ -60,6 +62,7 @@
         "memory:read"
       ],
       "isActive": true,
+      "emailVerified": true,
       "createdAt": "2025-08-29T20:25:11.535Z",
       "updatedAt": "2025-08-30T00:57:36.790Z",
       "loginAttempts": 0,
@@ -70,6 +73,96 @@
       "id": "user-1756501847712-c7qihg6vf",
       "username": "flowagency",
       "email": "flowagencyai@gmail.com",
+      "role": "super_admin",
+      "permissions": [
+        "system:read",
+        "system:write",
+        "system:restart",
+        "system:backup",
+        "config:read",
+        "config:write",
+        "config:reset",
+        "config:backup",
+        "users:read",
+        "users:write",
+        "users:delete",
+        "users:bulk_actions",
+        "bot:read",
+        "bot:control",
+        "bot:pause",
+        "bot:resume",
+        "conversations:read",
+        "conversations:write",
+        "conversations:delete",
+        "admin_users:read",
+        "admin_users:write",
+        "admin_users:delete",
+        "logs:read",
+        "logs:export",
+        "logs:clear",
+        "stats:read",
+        "stats:export",
+        "memory:read",
+        "memory:write",
+        "memory:clear"
+      ],
+      "isActive": true,
+      "emailVerified": true,
+      "createdAt": "2025-08-29T21:10:47.712Z",
+      "updatedAt": "2025-08-30T10:52:35.452Z",
+      "loginAttempts": 0,
+      "password": "$2b$12$fsuKr8V8us8nX.unUbRhqeEakk2PdnMFuZ.ShBoKZJCgg9M7Eu0XW",
+      "lastLogin": "2025-08-30T10:52:35.452Z"
+    },
+    {
+      "id": "user-1756503486243-xyz7k4s0m",
+      "username": "usuario",
+      "email": "usuario@teste.com",
+      "role": "viewer",
+      "permissions": [
+        "system:read",
+        "config:read",
+        "users:read",
+        "bot:read",
+        "conversations:read",
+        "logs:read",
+        "stats:read",
+        "memory:read"
+      ],
+      "isActive": true,
+      "emailVerified": true,
+      "createdAt": "2025-08-29T21:38:06.243Z",
+      "updatedAt": "2025-08-29T21:38:22.623Z",
+      "loginAttempts": 0,
+      "password": "$2b$12$N.cZfvoqnXcHA2yUZN2QKetW32XZDSh6yOrZK98dkcfb4f9ZV0fUu",
+      "lastLogin": "2025-08-29T21:38:22.623Z"
+    },
+    {
+      "id": "user-1756551222757-sl6ev2qsr",
+      "username": "teste_email_novo",
+      "email": "teste@whatsappbot.com",
+      "role": "viewer",
+      "permissions": [
+        "system:read",
+        "config:read",
+        "users:read",
+        "bot:read",
+        "conversations:read",
+        "logs:read",
+        "stats:read",
+        "memory:read"
+      ],
+      "isActive": true,
+      "emailVerified": false,
+      "createdAt": "2025-08-30T10:53:42.757Z",
+      "updatedAt": "2025-08-30T10:53:42.757Z",
+      "loginAttempts": 0,
+      "password": "$2b$12$0ogqQQUIaVy9Uhl9j9ocLeqZt89Qw1wvJKCqU7Sla7o1HxDuP3F3K"
+    },
+    {
+      "id": "user-1756551260432-oej42p26t",
+      "username": "flowagency_teste",
+      "email": "flowagency+teste@gmail.com",
       "role": "admin",
       "permissions": [
         "system:read",
@@ -97,33 +190,11 @@
         "memory:clear"
       ],
       "isActive": true,
-      "createdAt": "2025-08-29T21:10:47.712Z",
-      "updatedAt": "2025-08-29T21:10:58.796Z",
+      "emailVerified": false,
+      "createdAt": "2025-08-30T10:54:20.432Z",
+      "updatedAt": "2025-08-30T10:54:20.432Z",
       "loginAttempts": 0,
-      "password": "$2b$12$2WvzHTBa5ExJp0Qeu3K8qO6FUAA9i7YcF3AWrNE0QElcUIcQcnJJK",
-      "lastLogin": "2025-08-29T21:10:58.796Z"
-    },
-    {
-      "id": "user-1756503486243-xyz7k4s0m",
-      "username": "usuario",
-      "email": "usuario@teste.com",
-      "role": "viewer",
-      "permissions": [
-        "system:read",
-        "config:read",
-        "users:read",
-        "bot:read",
-        "conversations:read",
-        "logs:read",
-        "stats:read",
-        "memory:read"
-      ],
-      "isActive": true,
-      "createdAt": "2025-08-29T21:38:06.243Z",
-      "updatedAt": "2025-08-29T21:38:22.623Z",
-      "loginAttempts": 0,
-      "password": "$2b$12$N.cZfvoqnXcHA2yUZN2QKetW32XZDSh6yOrZK98dkcfb4f9ZV0fUu",
-      "lastLogin": "2025-08-29T21:38:22.623Z"
+      "password": "$2b$12$MwQeuKytoc0XFkuoKqFaeO1EydTrAIALB4TOwpHwSOKt12ngM3fz."
     }
   ],
   "settings": {

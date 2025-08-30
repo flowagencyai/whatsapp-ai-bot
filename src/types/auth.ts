@@ -7,6 +7,8 @@ export interface User {
   role: UserRole;
   permissions: Permission[];
   isActive: boolean;
+  emailVerified?: boolean;
+  emailVerifiedAt?: string;
   createdAt: string;
   updatedAt: string;
   lastLogin?: string;

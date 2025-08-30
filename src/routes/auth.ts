@@ -417,4 +417,84 @@ authRouter.get('/security-settings', authenticate, requirePermission('system:rea
   }
 });
 
+/**
+ * GET /auth/verify-email
+ * Verify user email with token
+ */
+authRouter.get('/verify-email', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { token } = req.query;
+
+    if (!token || typeof token !== 'string') {
+      res.status(400).json({
+        success: false,
+        error: 'Token de verificação é obrigatório',
+        code: 'MISSING_TOKEN'
+      });
+      return;
+    }
+
+    const result = await authService.verifyEmail(token);
+
+    if (result.success) {
+      // Redirecionar para página de sucesso
+      res.redirect(`http://localhost:3001/auth/email-verified?message=${encodeURIComponent(result.message)}`);
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.message,
+        code: 'VERIFICATION_FAILED'
+      });
+    }
+  } catch (error) {
+    logger.error('Email verification endpoint error', { error });
+    res.status(500).json({
+      success: false,
+      error: 'Erro ao verificar email',
+      code: 'SERVER_ERROR'
+    });
+  }
+});
+
+/**
+ * POST /auth/resend-verification
+ * Resend verification email
+ */
+authRouter.post('/resend-verification', authenticate, async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({
+        success: false,
+        error: 'Usuário não autenticado',
+        code: 'NOT_AUTHENTICATED'
+      });
+      return;
+    }
+
+    const result = await authService.resendVerificationEmail(req.user.userId);
+
+    if (result.success) {
+      res.json({
+        success: true,
+        message: result.message
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.message,
+        code: 'RESEND_FAILED'
+      });
+    }
+  } catch (error) {
+    logger.error('Resend verification endpoint error', { error });
+    res.status(500).json({
+      success: false,
+      error: 'Erro ao reenviar email de verificação',
+      code: 'SERVER_ERROR'
+    });
+  }
+});
+
+export default authRouter;
+
 export { authRouter };
