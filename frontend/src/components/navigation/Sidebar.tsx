@@ -18,6 +18,7 @@ import {
   X,
   Shield,
   Palette,
+  CreditCard,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -69,6 +70,13 @@ const navItems: NavItem[] = [
     // Sem permission/roles - visível para todos os usuários autenticados
   },
   {
+    title: 'Minha Assinatura',
+    href: '/subscription',
+    icon: CreditCard,
+    description: 'Gerenciar assinatura e cobrança',
+    // Sem permission/roles - visível para todos os usuários autenticados
+  },
+  {
     title: 'Logs do Sistema',
     href: '/admin/logs',
     icon: ScrollText,
@@ -82,6 +90,15 @@ const navItems: NavItem[] = [
     icon: Settings,
     description: 'Configurações do bot',
     permission: 'config:read',
+    roles: ['super_admin', 'admin']
+  },
+  {
+    title: 'Planos',
+    href: '/admin/plans',
+    icon: CreditCard,
+    description: 'Gerenciar planos e assinaturas',
+    badge: 'PRO',
+    permission: 'admin_users:read',
     roles: ['super_admin', 'admin']
   },
   {

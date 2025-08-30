@@ -14,6 +14,13 @@ export interface User {
   lastLogin?: string;
   loginAttempts: number;
   lockedUntil?: string;
+  // Subscription info (populated when needed)
+  subscription?: {
+    planType: string;
+    planName: string;
+    status: string;
+    expiresAt?: string;
+  };
 }
 
 export type UserRole = 'super_admin' | 'admin' | 'moderator' | 'viewer' | 'operator';
@@ -36,7 +43,9 @@ export type Permission =
   // Statistics and analytics
   | 'stats:read' | 'stats:export'
   // Memory management
-  | 'memory:read' | 'memory:write' | 'memory:clear';
+  | 'memory:read' | 'memory:write' | 'memory:clear'
+  // Admin panel access
+  | 'admin_panel:access';
 
 export interface LoginRequest {
   username: string;
@@ -100,6 +109,7 @@ export interface UpdateUserRequest {
 export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   super_admin: [
     // All permissions
+    'admin_panel:access',
     'system:read', 'system:write', 'system:restart', 'system:backup',
     'config:read', 'config:write', 'config:reset', 'config:backup',
     'users:read', 'users:write', 'users:delete', 'users:bulk_actions',
@@ -112,6 +122,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   ],
   
   admin: [
+    'admin_panel:access',
     'system:read', 'system:backup',
     'config:read', 'config:write', 'config:backup',
     'users:read', 'users:write', 'users:bulk_actions',
@@ -124,6 +135,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   ],
   
   moderator: [
+    'admin_panel:access',
     'system:read',
     'config:read',
     'users:read', 'users:write',
@@ -136,6 +148,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   ],
   
   operator: [
+    'admin_panel:access',
     'system:read',
     'config:read',
     'users:read',
@@ -147,14 +160,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   ],
   
   viewer: [
-    'system:read',
-    'config:read',
-    'users:read',
     'bot:read',
     'conversations:read',
-    'logs:read',
-    'stats:read',
-    'memory:read'
+    'stats:read'
   ]
 };
 

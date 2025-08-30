@@ -32,9 +32,8 @@ export default function ConversationsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isClient, setIsClient] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState<{
-    userId: string;
-    userName: string;
-    userPhone: string;
+    remoteJid: string;
+    name: string;
     status: 'active' | 'paused' | 'ended';
   } | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -52,11 +51,9 @@ export default function ConversationsPage() {
   });
 
   const handleViewMessages = (conversation: any) => {
-    const userId = conversation.userId || conversation.remoteJid;
     setSelectedConversation({
-      userId,
-      userName: conversation.name,
-      userPhone: extractNameFromJid(conversation.remoteJid),
+      remoteJid: conversation.remoteJid,
+      name: conversation.name,
       status: conversation.status
     });
     setIsModalOpen(true);
@@ -75,7 +72,7 @@ export default function ConversationsPage() {
       if (response.ok) {
         await refreshConversations();
         // Update selected conversation status if it's currently open
-        if (selectedConversation?.userId === userId) {
+        if (selectedConversation?.remoteJid === userId) {
           setSelectedConversation(prev => prev ? {
             ...prev,
             status: endpoint === 'pause' ? 'paused' : 'active'
@@ -374,8 +371,8 @@ export default function ConversationsPage() {
                         size="icon" 
                         variant="ghost" 
                         className="h-8 w-8"
-                        onClick={() => handlePauseToggle(conversation.userId || conversation.remoteJid, conversation.status)}
-                        disabled={actionLoading === (conversation.userId || conversation.remoteJid)}
+                        onClick={() => handlePauseToggle(conversation.remoteJid, conversation.status)}
+                        disabled={actionLoading === (conversation.remoteJid)}
                         title={conversation.status === 'active' ? 'Pausar' : 'Retomar'}
                       >
                         {conversation.status === 'active' ? (
@@ -389,8 +386,8 @@ export default function ConversationsPage() {
                         size="icon" 
                         variant="ghost" 
                         className="h-8 w-8"
-                        onClick={() => handleResetContext(conversation.userId || conversation.remoteJid)}
-                        disabled={actionLoading === `reset-${(conversation.userId || conversation.remoteJid)}`}
+                        onClick={() => handleResetContext(conversation.remoteJid)}
+                        disabled={actionLoading === `reset-${(conversation.remoteJid)}`}
                         title="Reset contexto"
                       >
                         <RotateCcw className="h-4 w-4" />
@@ -409,9 +406,9 @@ export default function ConversationsPage() {
         <ConversationMessagesModal
           isOpen={isModalOpen}
           onClose={handleModalClose}
-          userId={selectedConversation.userId}
-          userName={selectedConversation.userName}
-          userPhone={selectedConversation.userPhone}
+          userId={selectedConversation.remoteJid}
+          userName={selectedConversation.name}
+          userPhone={selectedConversation.remoteJid}
           conversationStatus={selectedConversation.status}
           onPauseToggle={handlePauseToggle}
           onResetContext={handleResetContext}

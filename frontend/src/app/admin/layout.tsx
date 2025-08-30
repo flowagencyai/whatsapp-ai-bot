@@ -44,7 +44,7 @@ export default function AdminLayout({
 
   // Protected admin routes
   return (
-    <ProtectedRoute requiredPermissions={['config:read']}>
+    <ProtectedRoute requiredPermissions={['admin_panel:access']} redirectTo="/admin/login">
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-red-50">
         <div className="flex min-h-screen">
           {/* Sidebar */}

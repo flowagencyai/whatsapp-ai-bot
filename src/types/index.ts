@@ -47,7 +47,10 @@ export enum CommandType {
   RESUME = 'RESUME',
   PDF = 'PDF',
   STATUS = 'STATUS',
-  HELP = 'HELP'
+  HELP = 'HELP',
+  UPGRADE = 'UPGRADE',
+  USAGE = 'USAGE',
+  PLAN = 'PLAN'
 }
 
 export interface Command {

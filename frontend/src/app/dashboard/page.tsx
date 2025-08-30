@@ -33,7 +33,10 @@ import {
   RotateCcw,
   Palette,
   Save,
-  Loader2
+  Loader2,
+  CreditCard,
+  User,
+  ShoppingCart
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { formatRelativeTime, extractNameFromJid } from '@/lib/utils';
@@ -51,6 +54,7 @@ export default function UserDashboardPage() {
   const { confirm } = useConfirm();
   const { addToast } = useToast();
   const [activeTab, setActiveTab] = useState('overview');
+  const [settingsSection, setSettingsSection] = useState('account'); // account, personalization, plans
   const [searchTerm, setSearchTerm] = useState('');
   const [isClient, setIsClient] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -65,9 +69,8 @@ export default function UserDashboardPage() {
   const [customName, setCustomName] = useState('');
   const [customGreeting, setCustomGreeting] = useState('');
   const [selectedConversation, setSelectedConversation] = useState<{
-    userId: string;
-    userName: string;
-    userPhone: string;
+    remoteJid: string;
+    name: string;
     status: 'active' | 'paused' | 'ended';
   } | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -77,12 +80,12 @@ export default function UserDashboardPage() {
     setIsClient(true);
   }, []);
 
-  // Load personalization when settings tab is opened
+  // Load personalization when personalization section is opened
   useEffect(() => {
-    if (activeTab === 'settings') {
+    if (activeTab === 'settings' && settingsSection === 'personalization') {
       loadPersonalization();
     }
-  }, [activeTab]);
+  }, [activeTab, settingsSection]);
 
   const responseStyles = [
     { value: 'formal', label: 'Formal', description: 'Linguagem respeitosa e profissional' },
@@ -194,15 +197,13 @@ export default function UserDashboardPage() {
 
   const handleLogout = async () => {
     await logout();
-    router.replace('/');
+    router.replace('/auth/login');
   };
 
   const handleViewMessages = (conversation: any) => {
-    const userId = conversation.userId || conversation.remoteJid;
     setSelectedConversation({
-      userId,
-      userName: conversation.name,
-      userPhone: extractNameFromJid(conversation.remoteJid),
+      remoteJid: conversation.remoteJid,
+      name: conversation.name,
       status: conversation.status
     });
     setIsModalOpen(true);
@@ -220,7 +221,7 @@ export default function UserDashboardPage() {
       
       if (response.ok) {
         await refreshConversations();
-        if (selectedConversation?.userId === userId) {
+        if (selectedConversation?.remoteJid === userId) {
           setSelectedConversation(prev => prev ? {
             ...prev,
             status: endpoint === 'pause' ? 'paused' : 'active'
@@ -436,6 +437,20 @@ export default function UserDashboardPage() {
       }`}
     >
       <Icon className="w-4 h-4" />
+      <span className="font-medium">{label}</span>
+    </button>
+  );
+
+  const SettingsButton = ({ id, label, icon: Icon, active }: { id: string; label: string; icon: any; active: boolean }) => (
+    <button
+      onClick={() => setSettingsSection(id)}
+      className={`flex items-center space-x-3 px-4 py-3 w-full text-left rounded-lg transition-colors ${
+        active 
+          ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-500' 
+          : 'hover:bg-gray-50 text-gray-600'
+      }`}
+    >
+      <Icon className="w-5 h-5" />
       <span className="font-medium">{label}</span>
     </button>
   );
@@ -776,8 +791,8 @@ export default function UserDashboardPage() {
                                 size="icon" 
                                 variant="ghost" 
                                 className="h-8 w-8"
-                                onClick={() => handlePauseToggle(conversation.userId || conversation.remoteJid, conversation.status)}
-                                disabled={actionLoading === (conversation.userId || conversation.remoteJid)}
+                                onClick={() => handlePauseToggle(conversation.remoteJid, conversation.status)}
+                                disabled={actionLoading === (conversation.remoteJid)}
                                 title={conversation.status === 'active' ? 'Pausar' : 'Retomar'}
                               >
                                 {conversation.status === 'active' ? (
@@ -791,8 +806,8 @@ export default function UserDashboardPage() {
                                 size="icon" 
                                 variant="ghost" 
                                 className="h-8 w-8"
-                                onClick={() => handleResetUserContext(conversation.userId || conversation.remoteJid)}
-                                disabled={actionLoading === `reset-${(conversation.userId || conversation.remoteJid)}`}
+                                onClick={() => handleResetUserContext(conversation.remoteJid)}
+                                disabled={actionLoading === `reset-${(conversation.remoteJid)}`}
                                 title="Reset contexto"
                               >
                                 <RotateCcw className="h-4 w-4" />
@@ -871,213 +886,338 @@ export default function UserDashboardPage() {
           )}
 
           {activeTab === 'settings' && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Settings className="w-5 h-5 mr-2" />
-                  Configurações do Usuário
-                </CardTitle>
-                <CardDescription>
-                  Personalize sua experiência
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-lg font-medium mb-4">Informações da Conta</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-medium">Usuário</label>
-                        <p className="text-sm text-muted-foreground">{user?.username}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium">Email</label>
-                        <p className="text-sm text-muted-foreground">{user?.email}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium">Tipo de Conta</label>
-                        <p className="text-sm text-muted-foreground">
-                          {user?.role === 'viewer' ? 'Usuário Comum' : user?.role}
-                        </p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium">Status</label>
-                        <Badge variant="success" className="text-xs">Ativo</Badge>
-                      </div>
-                    </div>
-                  </div>
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              {/* Settings Sidebar */}
+              <div className="lg:col-span-1">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Configurações</CardTitle>
+                    <CardDescription>
+                      Gerencie suas preferências
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <SettingsButton 
+                      id="account" 
+                      label="Informações da Conta" 
+                      icon={User} 
+                      active={settingsSection === 'account'} 
+                    />
+                    <SettingsButton 
+                      id="personalization" 
+                      label="Personalização do Bot" 
+                      icon={Palette} 
+                      active={settingsSection === 'personalization'} 
+                    />
+                    <SettingsButton 
+                      id="plans" 
+                      label="Planos & Assinatura" 
+                      icon={CreditCard} 
+                      active={settingsSection === 'plans'} 
+                    />
+                  </CardContent>
+                </Card>
+              </div>
 
-                  <div>
-                    <h3 className="text-lg font-medium mb-4">Permissões</h3>
-                    <div className="text-sm text-muted-foreground">
-                      <p>Como usuário comum, você pode:</p>
-                      <ul className="list-disc list-inside mt-2 space-y-1">
-                        <li>Visualizar conversas e estatísticas</li>
-                        <li>Acessar o código QR para conexão</li>
-                        <li>Monitorar o status do bot</li>
-                        <li>Ver informações básicas do sistema</li>
-                      </ul>
-                    </div>
-                  </div>
-
-                  {/* Personalização do Bot */}
-                  <div className="border-t pt-6">
-                    <div className="flex items-center gap-2 mb-4">
-                      <Palette className="w-5 h-5 text-blue-500" />
-                      <h3 className="text-lg font-medium">Personalização do Bot</h3>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-6">
-                      Configure como você gostaria que o ZecaBot interaja especificamente com você
-                    </p>
-
-                    {personalizationLoading ? (
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>Carregando personalizações...</span>
-                      </div>
-                    ) : (
-                      <div className="space-y-6">
-                        {/* Personalidade */}
-                        <div>
-                          <Label htmlFor="personality" className="text-sm font-medium">
-                            Personalidade do Bot
-                          </Label>
-                          <p className="text-xs text-muted-foreground mb-2">
-                            Descreva como você gostaria que o bot se comporte nas conversas com você
-                          </p>
-                          <textarea
-                            id="personality"
-                            className="w-full min-h-[80px] p-3 border rounded-md resize-none text-sm"
-                            placeholder="Ex: Seja mais enérgico e entusiástico nas respostas, use emojis quando apropriado..."
-                            value={personality}
-                            onChange={(e) => setPersonality(e.target.value)}
-                          />
+              {/* Settings Content */}
+              <div className="lg:col-span-3">
+                {/* Account Section */}
+                {settingsSection === 'account' && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center">
+                        <User className="w-5 h-5 mr-2" />
+                        Informações da Conta
+                      </CardTitle>
+                      <CardDescription>
+                        Visualize suas informações de conta e permissões
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div>
+                        <h3 className="text-lg font-medium mb-4">Dados da Conta</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium text-gray-700">Usuário</label>
+                            <p className="text-sm text-gray-600 mt-1">{user?.username}</p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-700">Email</label>
+                            <p className="text-sm text-gray-600 mt-1">{user?.email}</p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-700">Tipo de Conta</label>
+                            <p className="text-sm text-gray-600 mt-1">
+                              {user?.role === 'viewer' ? 'Usuário Comum' : user?.role}
+                            </p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-700">Status</label>
+                            <div className="mt-1">
+                              <Badge variant="default" className="bg-green-100 text-green-800">
+                                Ativo
+                              </Badge>
+                            </div>
+                          </div>
                         </div>
+                      </div>
 
-                        {/* Informações Importantes */}
-                        <div>
-                          <Label htmlFor="important-info" className="text-sm font-medium">
-                            Informações Importantes sobre Você
-                          </Label>
-                          <p className="text-xs text-muted-foreground mb-2">
-                            Informações que o bot deve saber para te atender melhor
-                          </p>
-                          <textarea
-                            id="important-info"
-                            className="w-full min-h-[60px] p-3 border rounded-md resize-none text-sm"
-                            placeholder="Ex: Trabalho com vendas online, prefiro respostas diretas, sou do setor de marketing..."
-                            value={importantInfo}
-                            onChange={(e) => setImportantInfo(e.target.value)}
-                          />
+                      <div className="border-t pt-6">
+                        <h3 className="text-lg font-medium mb-4">Permissões</h3>
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <p className="text-sm text-gray-700 mb-3">Como usuário comum, você pode:</p>
+                          <ul className="text-sm text-gray-600 space-y-2">
+                            <li className="flex items-center">
+                              <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                              Visualizar conversas e estatísticas
+                            </li>
+                            <li className="flex items-center">
+                              <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                              Acessar o código QR para conexão
+                            </li>
+                            <li className="flex items-center">
+                              <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                              Monitorar o status do bot
+                            </li>
+                            <li className="flex items-center">
+                              <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                              Personalizar interações com o bot
+                            </li>
+                          </ul>
                         </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
-                        {/* Estilo de Resposta */}
-                        <div>
-                          <Label className="text-sm font-medium">Estilo de Resposta</Label>
-                          <p className="text-xs text-muted-foreground mb-3">
-                            Escolha o tom das respostas do bot
-                          </p>
-                          <div className="grid grid-cols-2 gap-3">
-                            {responseStyles.map((style) => (
-                              <div
-                                key={style.value}
-                                className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                                  responseStyle === style.value
-                                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30'
-                                    : 'border-gray-200 hover:border-gray-300'
-                                }`}
-                                onClick={() => setResponseStyle(style.value)}
-                              >
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <div className="font-medium text-sm">{style.label}</div>
-                                    <div className="text-xs text-muted-foreground">
-                                      {style.description}
+                {/* Personalization Section */}
+                {settingsSection === 'personalization' && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center">
+                        <Palette className="w-5 h-5 mr-2" />
+                        Personalização do Bot
+                      </CardTitle>
+                      <CardDescription>
+                        Configure como você gostaria que o ZecaBot interaja especificamente com você
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {personalizationLoading ? (
+                        <div className="flex items-center gap-2 text-gray-600 py-8">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>Carregando personalizações...</span>
+                        </div>
+                      ) : (
+                        <div className="space-y-6">
+                          {/* Personalidade */}
+                          <div>
+                            <Label htmlFor="personality" className="text-sm font-medium">
+                              Personalidade do Bot
+                            </Label>
+                            <p className="text-xs text-gray-600 mb-2">
+                              Descreva como você gostaria que o bot se comporte nas conversas com você
+                            </p>
+                            <textarea
+                              id="personality"
+                              className="w-full min-h-[80px] p-3 border rounded-md resize-none text-sm"
+                              placeholder="Ex: Seja mais enérgico e entusiástico nas respostas, use emojis quando apropriado..."
+                              value={personality}
+                              onChange={(e) => setPersonality(e.target.value)}
+                            />
+                          </div>
+
+                          {/* Informações Importantes */}
+                          <div>
+                            <Label htmlFor="important-info" className="text-sm font-medium">
+                              Informações Importantes sobre Você
+                            </Label>
+                            <p className="text-xs text-gray-600 mb-2">
+                              Informações que o bot deve saber para te atender melhor
+                            </p>
+                            <textarea
+                              id="important-info"
+                              className="w-full min-h-[60px] p-3 border rounded-md resize-none text-sm"
+                              placeholder="Ex: Trabalho com vendas online, prefiro respostas diretas, sou do setor de marketing..."
+                              value={importantInfo}
+                              onChange={(e) => setImportantInfo(e.target.value)}
+                            />
+                          </div>
+
+                          {/* Estilo de Resposta */}
+                          <div>
+                            <Label className="text-sm font-medium">Estilo de Resposta</Label>
+                            <p className="text-xs text-gray-600 mb-3">
+                              Escolha o tom das respostas do bot
+                            </p>
+                            <div className="grid grid-cols-2 gap-3">
+                              {responseStyles.map((style) => (
+                                <div
+                                  key={style.value}
+                                  className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                                    responseStyle === style.value
+                                      ? 'border-blue-500 bg-blue-50'
+                                      : 'border-gray-200 hover:border-gray-300'
+                                  }`}
+                                  onClick={() => setResponseStyle(style.value)}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <div className="font-medium text-sm">{style.label}</div>
+                                      <div className="text-xs text-gray-600">
+                                        {style.description}
+                                      </div>
                                     </div>
+                                    {responseStyle === style.value && (
+                                      <div className="h-2 w-2 rounded-full bg-blue-500" />
+                                    )}
                                   </div>
-                                  {responseStyle === style.value && (
-                                    <div className="h-2 w-2 rounded-full bg-blue-500" />
-                                  )}
                                 </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Customizações */}
+                          <div>
+                            <Label className="text-sm font-medium">Customizações (Opcional)</Label>
+                            <p className="text-xs text-gray-600 mb-3">
+                              Personalize nome e saudação do bot
+                            </p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <Label htmlFor="custom-name" className="text-xs text-gray-600">
+                                  Nome Personalizado do Bot
+                                </Label>
+                                <Input
+                                  id="custom-name"
+                                  placeholder="Ex: MeuAssistente (padrão: ZecaBot)"
+                                  value={customName}
+                                  onChange={(e) => setCustomName(e.target.value)}
+                                  className="text-sm mt-1"
+                                />
                               </div>
-                            ))}
+                              <div>
+                                <Label htmlFor="custom-greeting" className="text-xs text-gray-600">
+                                  Saudação Personalizada
+                                </Label>
+                                <Input
+                                  id="custom-greeting"
+                                  placeholder="Ex: Olá! Sou seu assistente pessoal..."
+                                  value={customGreeting}
+                                  onChange={(e) => setCustomGreeting(e.target.value)}
+                                  className="text-sm mt-1"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex gap-3 pt-4 border-t">
+                            <Button 
+                              onClick={savePersonalization} 
+                              disabled={savingPersonalization}
+                              className="bg-blue-600 hover:bg-blue-700"
+                            >
+                              {savingPersonalization ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Salvando...
+                                </>
+                              ) : (
+                                <>
+                                  <Save className="mr-2 h-4 w-4" />
+                                  Salvar Personalizações
+                                </>
+                              )}
+                            </Button>
+                            
+                            <Button 
+                              variant="outline"
+                              onClick={() => {
+                                setPersonality('');
+                                setImportantInfo('');
+                                setCustomName('');
+                                setCustomGreeting('');
+                                setResponseStyle('friendly');
+                              }}
+                            >
+                              <RotateCcw className="mr-2 h-4 w-4" />
+                              Limpar
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Plans Section */}
+                {settingsSection === 'plans' && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center">
+                        <CreditCard className="w-5 h-5 mr-2" />
+                        Planos & Assinatura
+                      </CardTitle>
+                      <CardDescription>
+                        Gerencie sua assinatura e veja os planos disponíveis
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-6">
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                          <h3 className="font-medium text-blue-900 mb-2">Plano Atual</h3>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-blue-800 font-medium">Plano Gratuito</p>
+                              <p className="text-sm text-blue-600">Acesso básico às funcionalidades</p>
+                            </div>
+                            <Badge variant="outline" className="border-blue-300 text-blue-700">
+                              Ativo
+                            </Badge>
                           </div>
                         </div>
 
-                        {/* Customizações (opcional) */}
                         <div>
-                          <Label className="text-sm font-medium">Customizações (Opcional)</Label>
-                          <p className="text-xs text-muted-foreground mb-3">
-                            Personalize nome e saudação do bot
-                          </p>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <Label htmlFor="custom-name" className="text-xs text-muted-foreground">
-                                Nome Personalizado do Bot
-                              </Label>
-                              <Input
-                                id="custom-name"
-                                placeholder="Ex: MeuAssistente (padrão: ZecaBot)"
-                                value={customName}
-                                onChange={(e) => setCustomName(e.target.value)}
-                                className="text-sm"
-                              />
+                          <h3 className="font-medium text-gray-900 mb-3">Funcionalidades Incluídas</h3>
+                          <div className="space-y-2">
+                            <div className="flex items-center text-sm">
+                              <CheckCircle className="w-4 h-4 text-green-500 mr-3" />
+                              <span>Visualização de conversas e estatísticas</span>
                             </div>
-                            <div>
-                              <Label htmlFor="custom-greeting" className="text-xs text-muted-foreground">
-                                Saudação Personalizada
-                              </Label>
-                              <Input
-                                id="custom-greeting"
-                                placeholder="Ex: Olá! Sou seu assistente pessoal..."
-                                value={customGreeting}
-                                onChange={(e) => setCustomGreeting(e.target.value)}
-                                className="text-sm"
-                              />
+                            <div className="flex items-center text-sm">
+                              <CheckCircle className="w-4 h-4 text-green-500 mr-3" />
+                              <span>Acesso ao QR Code para conexão</span>
+                            </div>
+                            <div className="flex items-center text-sm">
+                              <CheckCircle className="w-4 h-4 text-green-500 mr-3" />
+                              <span>Personalização básica do bot</span>
                             </div>
                           </div>
                         </div>
 
-                        {/* Botão Salvar */}
-                        <div className="flex gap-3 pt-4 border-t">
-                          <Button 
-                            onClick={savePersonalization} 
-                            disabled={savingPersonalization}
-                            className="bg-blue-600 hover:bg-blue-700"
-                          >
-                            {savingPersonalization ? (
-                              <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Salvando...
-                              </>
-                            ) : (
-                              <>
-                                <Save className="mr-2 h-4 w-4" />
-                                Salvar Personalizações
-                              </>
-                            )}
-                          </Button>
-                          
-                          <Button 
-                            variant="outline"
-                            onClick={() => {
-                              setPersonality('');
-                              setImportantInfo('');
-                              setCustomName('');
-                              setCustomGreeting('');
-                              setResponseStyle('friendly');
-                            }}
-                          >
-                            <RotateCcw className="mr-2 h-4 w-4" />
-                            Limpar
-                          </Button>
+                        <div className="border-t pt-6">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-medium text-gray-900">Upgrade seu Plano</h3>
+                            <Button 
+                              onClick={() => router.push('/plans')}
+                              className="bg-blue-600 hover:bg-blue-700"
+                            >
+                              <ShoppingCart className="w-4 h-4 mr-2" />
+                              Ver Planos
+                            </Button>
+                          </div>
+                          <p className="text-sm text-gray-600">
+                            Desbloqueie recursos avançados como IA ilimitada, análise de imagem, 
+                            transcrição de áudio e muito mais.
+                          </p>
                         </div>
                       </div>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </div>
           )}
         </main>
 
@@ -1086,9 +1226,9 @@ export default function UserDashboardPage() {
           <ConversationMessagesModal
             isOpen={isModalOpen}
             onClose={handleModalClose}
-            userId={selectedConversation.userId}
-            userName={selectedConversation.userName}
-            userPhone={selectedConversation.userPhone}
+            userId={selectedConversation.remoteJid}
+            userName={selectedConversation.name}
+            userPhone={selectedConversation.remoteJid}
             conversationStatus={selectedConversation.status}
             onPauseToggle={handlePauseToggle}
             onResetContext={handleResetUserContext}

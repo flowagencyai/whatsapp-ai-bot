@@ -10,7 +10,11 @@ import { BotError } from './types/index.js';
 import { adminRouter } from './routes/admin.js';
 import { authRouter } from './routes/auth.js';
 import { userRouter } from './routes/user.js';
+import { subscriptionRouter } from './routes/subscription.js';
+import { paymentRouter } from './routes/payment.js';
 import { adminConfigManager } from './services/admin/configManager.js';
+import { authenticate } from './middleware/auth.js';
+import { requireMessageQuota, trackUsage, addSubscriptionHeaders } from './middleware/subscription.js';
 
 class WhatsAppBot {
   private app: express.Application;
@@ -131,32 +135,38 @@ class WhatsAppBot {
       }
     });
 
-    // Manual message endpoint (for testing)
-    this.app.post('/send-message', async (req, res) => {
-      try {
-        const { to, message } = req.body;
-        
-        if (!to || !message) {
-          return res.status(400).json({
-            error: 'Missing required fields: to, message'
+    // Manual message endpoint (for testing) - now requires authentication and quota
+    this.app.post('/send-message', 
+      authenticate,
+      addSubscriptionHeaders(),
+      requireMessageQuota(),
+      trackUsage('messages', 1),
+      async (req, res) => {
+        try {
+          const { to, message } = req.body;
+          
+          if (!to || !message) {
+            return res.status(400).json({
+              error: 'Missing required fields: to, message'
+            });
+          }
+
+          const messageId = await whatsappConnection.sendMessage(to, message);
+          
+          res.json({
+            success: true,
+            messageId,
+            timestamp: new Date().toISOString(),
+          });
+        } catch (error) {
+          logger.error('Send message endpoint error', { error: error as Error });
+          res.status(500).json({
+            error: 'Failed to send message',
+            details: (error as Error).message,
           });
         }
-
-        const messageId = await whatsappConnection.sendMessage(to, message);
-        
-        res.json({
-          success: true,
-          messageId,
-          timestamp: new Date().toISOString(),
-        });
-      } catch (error) {
-        logger.error('Send message endpoint error', { error: error as Error });
-        res.status(500).json({
-          error: 'Failed to send message',
-          details: (error as Error).message,
-        });
       }
-    });
+    );
 
     // User management endpoints
     this.app.post('/users/:userId/pause', async (req, res) => {
@@ -414,6 +424,11 @@ class WhatsAppBot {
 
     // User API routes for personal settings
     this.app.use('/api/user', userRouter);
+    
+    // Subscription and plans routes
+    this.app.use('/api/subscription', subscriptionRouter);
+    this.app.use('/api/payment', paymentRouter);
+    
     // Admin API routes (isolated from main bot functionality) - now protected by auth
     this.app.use('/api/admin', adminRouter);
 

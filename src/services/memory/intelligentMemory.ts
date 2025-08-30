@@ -1,7 +1,7 @@
 import { BufferWindowMemory } from 'langchain/memory';
-import { BaseMessage, HumanMessage, AIMessage } from 'langchain/schema';
+import { BaseMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
 import { PromptTemplate } from 'langchain/prompts';
-import { ChatOpenAI } from 'langchain/chat_models/openai';
+import { ChatOpenAI } from '@langchain/openai';
 import { MessageContext, ProcessedMessage } from '../../types/index.js';
 import { logger } from '../../utils/logger.js';
 import { Redis } from './redisClient.js';

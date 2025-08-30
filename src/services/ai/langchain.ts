@@ -531,7 +531,7 @@ RESUMO:`,
   /**
    * Clear memory for specific user
    */
-  public clearUserMemory(userId: string): void {
+  public async clearUserMemory(userId: string): Promise<void> {
     // Clear standard memory
     if (this.memoryMap.has(userId)) {
       const memory = this.memoryMap.get(userId)!;

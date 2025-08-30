@@ -18,7 +18,7 @@ export function ProtectedRoute({
   requiredPermissions = [],
   requiredRole,
   requireAnyPermission = false,
-  redirectTo = '/admin/login'
+  redirectTo = '/auth/login'
 }: ProtectedRouteProps) {
   const { isAuthenticated, loading, hasPermission, hasRole, hasAnyPermission, user } = useAuth();
   const router = useRouter();
@@ -125,7 +125,7 @@ export function ProtectedRoute({
 // Convenience wrapper components for common permission checks
 export function AdminRoute({ children }: { children: ReactNode }) {
   return (
-    <ProtectedRoute requiredPermissions={['config:read']}>
+    <ProtectedRoute requiredPermissions={['admin_panel:access']} redirectTo="/admin/login">
       {children}
     </ProtectedRoute>
   );
@@ -133,7 +133,7 @@ export function AdminRoute({ children }: { children: ReactNode }) {
 
 export function SuperAdminRoute({ children }: { children: ReactNode }) {
   return (
-    <ProtectedRoute requiredRole="super_admin">
+    <ProtectedRoute requiredRole="super_admin" redirectTo="/admin/login">
       {children}
     </ProtectedRoute>
   );
@@ -141,7 +141,7 @@ export function SuperAdminRoute({ children }: { children: ReactNode }) {
 
 export function ConfigWriteRoute({ children }: { children: ReactNode }) {
   return (
-    <ProtectedRoute requiredPermissions={['config:write']}>
+    <ProtectedRoute requiredPermissions={['config:write']} redirectTo="/admin/login">
       {children}
     </ProtectedRoute>
   );
@@ -149,7 +149,7 @@ export function ConfigWriteRoute({ children }: { children: ReactNode }) {
 
 export function UserManagementRoute({ children }: { children: ReactNode }) {
   return (
-    <ProtectedRoute requiredPermissions={['admin_users:read', 'admin_users:write']} requireAnyPermission>
+    <ProtectedRoute requiredPermissions={['admin_users:read', 'admin_users:write']} requireAnyPermission redirectTo="/admin/login">
       {children}
     </ProtectedRoute>
   );

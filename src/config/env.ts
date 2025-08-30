@@ -61,6 +61,10 @@ const EnvSchema = z.object({
   // Cache Configuration
   USE_MEMORY_CACHE: z.string().optional(),
 
+  // Stripe Configuration
+  STRIPE_SECRET_KEY: z.string().optional(),
+  STRIPE_PUBLISHABLE_KEY: z.string().optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().optional(),
 
   // Logging Configuration
   LOG_FILE_PATH: z.string().default('logs/bot.log'),
@@ -156,6 +160,12 @@ export const env: EnvConfig = {
   rateLimit: {
     windowMs: parsedEnv.RATE_LIMIT_WINDOW,
     maxRequests: parsedEnv.RATE_LIMIT_MAX_REQUESTS,
+  },
+
+  stripe: {
+    secretKey: parsedEnv.STRIPE_SECRET_KEY || '',
+    publishableKey: parsedEnv.STRIPE_PUBLISHABLE_KEY || '',
+    webhookSecret: parsedEnv.STRIPE_WEBHOOK_SECRET || '',
   },
 };
 

@@ -48,7 +48,7 @@ export default function PersonalizationPage() {
   const [saving, setSaving] = useState(false);
   const [resetting, setResetting] = useState(false);
   const { user, getToken } = useAuth();
-  const { toast } = useToast();
+  const { addToast } = useToast();
 
   // Form state
   const [personality, setPersonality] = useState('');
@@ -88,10 +88,10 @@ export default function PersonalizationPage() {
       }
     } catch (error) {
       console.error('Error loading personalization:', error);
-      toast({
+      addToast({
+        type: 'error',
         title: 'Erro ao carregar',
         description: 'Não foi possível carregar suas personalizações.',
-        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -129,7 +129,8 @@ export default function PersonalizationPage() {
       if (response.ok) {
         const data = await response.json();
         setConfig(data.data);
-        toast({
+        addToast({
+          type: 'success',
           title: 'Personalização salva!',
           description: 'Suas preferências foram atualizadas com sucesso.',
         });
@@ -138,10 +139,10 @@ export default function PersonalizationPage() {
       }
     } catch (error) {
       console.error('Error saving personalization:', error);
-      toast({
+      addToast({
+        type: 'error',
         title: 'Erro ao salvar',
         description: 'Não foi possível salvar suas personalizações.',
-        variant: 'destructive',
       });
     } finally {
       setSaving(false);
@@ -172,7 +173,8 @@ export default function PersonalizationPage() {
         setCustomGreeting('');
         setResponseStyle('friendly');
         
-        toast({
+        addToast({
+          type: 'success',
           title: 'Personalização resetada',
           description: 'Suas preferências foram restauradas para os padrões.',
         });
@@ -181,10 +183,10 @@ export default function PersonalizationPage() {
       }
     } catch (error) {
       console.error('Error resetting personalization:', error);
-      toast({
+      addToast({
+        type: 'error',
         title: 'Erro ao resetar',
         description: 'Não foi possível resetar suas personalizações.',
-        variant: 'destructive',
       });
     } finally {
       setResetting(false);

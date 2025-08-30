@@ -41,10 +41,10 @@
       "emailVerified": true,
       "emailVerifiedAt": "2025-08-29T20:00:36.769Z",
       "createdAt": "2025-08-29T20:00:36.769Z",
-      "updatedAt": "2025-08-30T11:45:43.299Z",
-      "loginAttempts": 1,
+      "updatedAt": "2025-08-30T13:55:06.025Z",
+      "loginAttempts": 0,
       "password": "$2b$12$Jrf5yJsduaKJquAsfhh2Keyus4cngKq1e.QBGLY7SHgIba/WqruoW",
-      "lastLogin": "2025-08-30T10:39:16.573Z"
+      "lastLogin": "2025-08-30T13:55:06.025Z"
     },
     {
       "id": "user-1756499111534-gdh5c29qd",
@@ -64,10 +64,10 @@
       "isActive": true,
       "emailVerified": true,
       "createdAt": "2025-08-29T20:25:11.535Z",
-      "updatedAt": "2025-08-30T12:05:39.828Z",
-      "loginAttempts": 3,
+      "updatedAt": "2025-08-30T13:46:14.755Z",
+      "loginAttempts": 0,
       "password": "$2b$12$8U14PNdig2Msu0xn.hAAlungcEd7wB97EG2/IPfbeHASI5NaJKfz2",
-      "lastLogin": "2025-08-30T11:48:16.996Z"
+      "lastLogin": "2025-08-30T13:46:14.755Z"
     },
     {
       "id": "user-1756501847712-c7qihg6vf",

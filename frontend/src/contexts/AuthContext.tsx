@@ -94,7 +94,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const hasPermission = (permission: string): boolean => {
-    return user?.permissions.includes(permission) || false;
+    if (!user) return false;
+    
+    // Check individual permissions first
+    if (user.permissions.includes(permission)) {
+      return true;
+    }
+    
+    // Check role-based permissions for admin_panel:access
+    if (permission === 'admin_panel:access') {
+      return user.role === 'super_admin' || user.role === 'admin';
+    }
+    
+    return false;
   };
 
   const hasRole = (role: string): boolean => {

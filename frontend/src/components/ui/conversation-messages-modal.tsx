@@ -165,7 +165,7 @@ export function ConversationMessagesModal({
               </div>
               <div className="text-center">
                 <div className="font-semibold text-lg">
-                  {formatRelativeTime(metadata.conversationStarted, true)}
+                  {formatRelativeTime(new Date(metadata.conversationStarted), true)}
                 </div>
                 <div className="text-sm text-gray-500">Iniciada</div>
               </div>
