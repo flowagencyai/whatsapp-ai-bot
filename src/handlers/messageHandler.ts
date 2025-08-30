@@ -56,7 +56,21 @@ class MessageHandler {
       
       await Redis.saveConversationMetadata(userId, lastMessagePreview, messageType as any);
 
-      // Check rate limiting
+      // Check global bot rate limiting (anti-ban protection)
+      const globalRateLimit = await Redis.checkGlobalBotRateLimit();
+      if (!globalRateLimit.allowed) {
+        logger.warn('Global bot rate limit exceeded', {
+          currentCount: globalRateLimit.currentCount,
+          resetTime: globalRateLimit.resetTime,
+          userId
+        });
+        
+        // Don't send a message to user about global rate limit (would be suspicious)
+        // Just silently ignore the message to appear more natural
+        return;
+      }
+
+      // Check individual user rate limiting
       const rateLimitStatus = await Redis.checkRateLimit(userId);
       if (rateLimitStatus.blocked) {
         logger.rateLimitExceeded(userId, rateLimitStatus.resetTime);

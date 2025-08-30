@@ -312,6 +312,109 @@ class RedisClient {
     }
   }
 
+  // Global Bot Rate Limiting (Anti-Ban Protection)
+  public async checkGlobalBotRateLimit(): Promise<{ allowed: boolean; resetTime: number; currentCount: number }> {
+    try {
+      const key = 'bot_global_rate_limit';
+      const hourlyLimit = 100; // 100 messages per hour for the entire bot
+      const windowMs = 60 * 60 * 1000; // 1 hour window
+      
+      const data = await memoryCache.get(key);
+      const now = Date.now();
+      
+      if (!data) {
+        // First message in the hour
+        const rateLimitData = {
+          count: 1,
+          resetTime: now + windowMs,
+          windowStart: now
+        };
+        
+        await memoryCache.set(key, JSON.stringify(rateLimitData), Math.ceil(windowMs / 1000));
+        
+        return {
+          allowed: true,
+          resetTime: rateLimitData.resetTime,
+          currentCount: 1
+        };
+      }
+      
+      const rateLimitData = JSON.parse(data);
+      
+      // Check if window has expired
+      if (now > rateLimitData.resetTime) {
+        // Reset window
+        const newRateLimitData = {
+          count: 1,
+          resetTime: now + windowMs,
+          windowStart: now
+        };
+        
+        await memoryCache.set(key, JSON.stringify(newRateLimitData), Math.ceil(windowMs / 1000));
+        
+        return {
+          allowed: true,
+          resetTime: newRateLimitData.resetTime,
+          currentCount: 1
+        };
+      }
+      
+      // Increment counter
+      rateLimitData.count++;
+      const allowed = rateLimitData.count <= hourlyLimit;
+      
+      // Update cache
+      const ttl = Math.ceil((rateLimitData.resetTime - now) / 1000);
+      await memoryCache.set(key, JSON.stringify(rateLimitData), ttl);
+      
+      return {
+        allowed,
+        resetTime: rateLimitData.resetTime,
+        currentCount: rateLimitData.count
+      };
+      
+    } catch (error) {
+      logger.error('Error checking global bot rate limit', { error: error as Error });
+      // Allow message on error to avoid blocking
+      return {
+        allowed: true,
+        resetTime: Date.now() + (60 * 60 * 1000),
+        currentCount: 0
+      };
+    }
+  }
+
+  public async getGlobalBotRateLimit(): Promise<{ currentCount: number; resetTime: number; limit: number }> {
+    try {
+      const key = 'bot_global_rate_limit';
+      const hourlyLimit = 100;
+      
+      const data = await memoryCache.get(key);
+      if (!data) {
+        return {
+          currentCount: 0,
+          resetTime: Date.now() + (60 * 60 * 1000),
+          limit: hourlyLimit
+        };
+      }
+      
+      const rateLimitData = JSON.parse(data);
+      return {
+        currentCount: rateLimitData.count || 0,
+        resetTime: rateLimitData.resetTime || Date.now() + (60 * 60 * 1000),
+        limit: hourlyLimit
+      };
+      
+    } catch (error) {
+      logger.error('Error getting global bot rate limit', { error: error as Error });
+      return {
+        currentCount: 0,
+        resetTime: Date.now() + (60 * 60 * 1000),
+        limit: 100
+      };
+    }
+  }
+
   public async healthCheck(): Promise<{ status: 'healthy' | 'unhealthy'; details: Record<string, unknown> }> {
     try {
       const isHealthy = await this.isHealthy();

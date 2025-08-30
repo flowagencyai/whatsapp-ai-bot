@@ -435,7 +435,54 @@ class WhatsAppConnection extends EventEmitter {
   }
 
   /**
-   * Send a text message
+   * Generate random delay for human-like behavior
+   */
+  private getRandomDelay(min: number = 1000, max: number = 3000): number {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  /**
+   * Calculate typing time based on message length (simulates human typing speed)
+   */
+  private calculateTypingTime(text: string): number {
+    // Average human typing: 40-60 WPM (words per minute)
+    const wordsPerMinute = 45;
+    const charactersPerMinute = wordsPerMinute * 5; // Average 5 chars per word
+    const charactersPerSecond = charactersPerMinute / 60;
+    
+    // Base typing time + random variation
+    const baseTime = (text.length / charactersPerSecond) * 1000;
+    const variation = baseTime * 0.3; // ±30% variation
+    const randomVariation = (Math.random() - 0.5) * variation;
+    
+    // Minimum 1s, maximum 10s for very long messages
+    return Math.max(1000, Math.min(10000, baseTime + randomVariation));
+  }
+
+  /**
+   * Send typing indicator
+   */
+  private async sendTypingIndicator(jid: string, duration: number): Promise<void> {
+    if (!this.socket || this.connectionState !== 'open') return;
+
+    try {
+      await this.socket.sendPresenceUpdate('composing', jid);
+      
+      // Keep typing indicator active for the specified duration
+      setTimeout(async () => {
+        if (this.socket && this.connectionState === 'open') {
+          await this.socket.sendPresenceUpdate('paused', jid);
+        }
+      }, duration);
+      
+      logger.debug('Typing indicator sent', { jid, duration });
+    } catch (error) {
+      logger.debug('Failed to send typing indicator', { error: error as Error, jid });
+    }
+  }
+
+  /**
+   * Send a text message with human-like behavior
    */
   public async sendMessage(jid: string, text: string): Promise<string | undefined> {
     if (!this.socket || this.connectionState !== 'open') {
@@ -443,8 +490,28 @@ class WhatsAppConnection extends EventEmitter {
     }
 
     try {
+      // Step 1: Random initial delay (simulates thinking/processing time)
+      const initialDelay = this.getRandomDelay(800, 2000);
+      logger.debug('Applying initial delay', { jid, delay: initialDelay });
+      await new Promise(resolve => setTimeout(resolve, initialDelay));
+
+      // Step 2: Send typing indicator and calculate typing time
+      const typingTime = this.calculateTypingTime(text);
+      logger.debug('Starting typing simulation', { jid, typingTime, textLength: text.length });
+      
+      await this.sendTypingIndicator(jid, typingTime);
+      
+      // Step 3: Wait for typing simulation to complete
+      await new Promise(resolve => setTimeout(resolve, typingTime));
+
+      // Step 4: Send the actual message
       const result = await this.socket.sendMessage(jid, { text });
       logger.messageSent(result?.key?.id || 'unknown', jid);
+      
+      // Step 5: Final small delay (simulates network/delivery time)
+      const finalDelay = this.getRandomDelay(200, 500);
+      await new Promise(resolve => setTimeout(resolve, finalDelay));
+      
       return result?.key?.id;
     } catch (error) {
       logger.error('Failed to send message', { 
