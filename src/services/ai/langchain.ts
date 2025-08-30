@@ -13,6 +13,7 @@ import {
 import { env, getOpenAIConfig } from '@/config/env';
 import { logger } from '@/utils/logger';
 import { Redis } from '@/services/memory/redisClient';
+import { intelligentMemory, IntelligentMemoryConfig } from '../memory/intelligentMemory.js';
 
 /**
  * LangChain-based AI service for enhanced conversation management
@@ -545,6 +546,133 @@ RESUMO:`,
       memory.clear();
       logger.info('Personalized user memory cleared', { userId, memoryKey: key });
     }
+    
+    // Clear intelligent memory
+    await intelligentMemory.clearUserMemory(userId);
+  }
+
+  /**
+   * Generate response using Intelligent Memory System
+   * Combina sistema de 3 camadas de memória para contexto mais eficiente
+   */
+  public async generateResponseWithIntelligentMemory(
+    context: MessageContext,
+    userMessage: string,
+    userId: string,
+    personalizedSettings?: {
+      systemPrompt: string;
+      temperature: number;
+      maxTokens: number;
+      model: string;
+      memorySize: number;
+    }
+  ): Promise<AIResponse> {
+    const startTime = Date.now();
+    
+    try {
+      // Usar configurações personalizadas ou padrões
+      const settings = personalizedSettings || {
+        systemPrompt: 'Sistema padrão',
+        temperature: env.openai.temperature,
+        maxTokens: env.openai.maxTokens,
+        model: env.openai.model,
+        memorySize: 10
+      };
+
+      logger.info('LangChain request started (Intelligent Memory)', { 
+        model: settings.model,
+        userId
+      });
+
+      // 1. Carregar memórias persistentes (se existirem)
+      await intelligentMemory.loadPersistedMemory(userId);
+
+      // 2. Configurar memória inteligente baseada nas preferências do usuário
+      const memoryConfig: IntelligentMemoryConfig = {
+        immediateMemorySize: Math.min(settings.memorySize, 8), // Máximo 8 para eficiência
+        workingMemorySize: 10,
+        longTermMemorySize: 3,
+        summarizationThreshold: 15 // Sumarizar mais cedo para usuários com conversas longas
+      };
+
+      // 3. Processar contexto através do sistema de memória inteligente
+      const intelligentContext = await intelligentMemory.processMessage(
+        userId, 
+        context, 
+        memoryConfig
+      );
+
+      // 4. Criar modelo personalizado
+      let llmModel = this.chatModel;
+      if (personalizedSettings) {
+        const config = getOpenAIConfig();
+        llmModel = new ChatOpenAI({
+          openAIApiKey: config.apiKey,
+          modelName: settings.model,
+          temperature: settings.temperature,
+          maxTokens: settings.maxTokens,
+          timeout: config.timeout,
+        });
+      }
+
+      // 5. Criar prompt otimizado com contexto inteligente
+      const optimizedPrompt = `${settings.systemPrompt}
+
+CONTEXTO INTELIGENTE DA CONVERSA:
+${intelligentContext}
+
+MENSAGEM ATUAL DO USUÁRIO: ${userMessage}
+
+Responda de forma natural, considerando todo o contexto da conversa:`;
+
+      // 6. Gerar resposta usando ConversationChain básica (sem memory duplicada)
+      const response = await llmModel.call([
+        { role: 'user', content: optimizedPrompt }
+      ]);
+
+      const aiResponse: AIResponse = {
+        content: response.content as string,
+        model: settings.model,
+        tokensUsed: this.estimateTokens(optimizedPrompt + response.content),
+        timestamp: new Date().toISOString(),
+        processingTime: Date.now() - startTime,
+        confidence: 0.95,
+        metadata: {
+          memoryType: 'intelligent',
+          memoryLayers: ['immediate', 'working', 'longterm'],
+          contextTokens: this.estimateTokens(intelligentContext),
+          personalizedSettings: !!personalizedSettings
+        }
+      };
+
+      logger.info('LangChain response generated (Intelligent Memory)', {
+        userId,
+        model: settings.model,
+        tokensUsed: aiResponse.tokensUsed,
+        processingTime: aiResponse.processingTime,
+        contextTokens: aiResponse.metadata?.contextTokens,
+        duration: `${Date.now() - startTime}ms`
+      });
+
+      return aiResponse;
+
+    } catch (error) {
+      logger.error('LangChain error (Intelligent Memory)', { 
+        error: error as Error, 
+        userId,
+        duration: `${Date.now() - startTime}ms`
+      });
+      
+      // Fallback para método tradicional em caso de erro
+      return this.generateResponse(context, userMessage, userId, personalizedSettings);
+    }
+  }
+
+  /**
+   * Estima tokens de forma aproximada (1 token ≈ 3-4 chars)
+   */
+  private estimateTokens(text: string): number {
+    return Math.ceil(text.length / 3.5);
   }
 
   /**

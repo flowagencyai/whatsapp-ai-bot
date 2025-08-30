@@ -211,14 +211,25 @@ class MessageHandler {
       // Get personalized AI settings for this user
       const userPhone = userId; // userId in our case is the phone number
       const personalizedSettings = personalizationService.getPersonalizedAISettings(userId, userPhone);
+      const userConfig = personalizationService.getUserConfig(userId, userPhone);
+
+      // Check if user has intelligent memory enabled
+      const useIntelligentMemory = userConfig.ai.useIntelligentMemory ?? false;
 
       // Generate AI response with personalized settings
-      const aiResponse = await langchainService.generateResponse(
-        context, 
-        text, 
-        userId, 
-        personalizedSettings
-      );
+      const aiResponse = useIntelligentMemory 
+        ? await langchainService.generateResponseWithIntelligentMemory(
+            context, 
+            text, 
+            userId, 
+            personalizedSettings
+          )
+        : await langchainService.generateResponse(
+            context, 
+            text, 
+            userId, 
+            personalizedSettings
+          );
 
       // Send response
       await whatsappConnection.sendMessage(userId, aiResponse.content);

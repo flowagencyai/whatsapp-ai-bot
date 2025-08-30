@@ -210,6 +210,13 @@ export interface UserPersonalizationConfig {
     temperature?: number;
     maxTokens?: number;
     model?: string;
+    useIntelligentMemory?: boolean;
+    memorySettings?: {
+      immediateMemorySize?: number;
+      workingMemorySize?: number;
+      longTermMemorySize?: number;
+      summarizationThreshold?: number;
+    };
   };
   bot: {
     customName?: string;
