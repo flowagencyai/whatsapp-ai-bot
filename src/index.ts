@@ -9,6 +9,7 @@ import { env } from './config/env.js';
 import { BotError } from './types/index.js';
 import { adminRouter } from './routes/admin.js';
 import { authRouter } from './routes/auth.js';
+import { userRouter } from './routes/user.js';
 import { adminConfigManager } from './services/admin/configManager.js';
 
 class WhatsAppBot {
@@ -411,6 +412,8 @@ class WhatsAppBot {
     // Authentication routes
     this.app.use('/api/auth', authRouter);
 
+    // User API routes for personal settings
+    this.app.use('/api/user', userRouter);
     // Admin API routes (isolated from main bot functionality) - now protected by auth
     this.app.use('/api/admin', adminRouter);
 

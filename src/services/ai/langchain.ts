@@ -115,6 +115,21 @@ Assistente:`,
   }
 
   /**
+   * Get or create personalized memory for specific user with custom memory size
+   */
+  private getOrCreatePersonalizedMemory(userId: string, memorySize: number = 10): BufferWindowMemory {
+    const memoryKey = `${userId}_${memorySize}`;
+    if (!this.memoryMap.has(memoryKey)) {
+      const memory = new BufferWindowMemory({
+        k: memorySize, // Remember last N exchanges based on user preference
+        returnMessages: true,
+      });
+      this.memoryMap.set(memoryKey, memory);
+    }
+    return this.memoryMap.get(memoryKey)!;
+  }
+
+  /**
    * Load conversation history from context into memory
    */
   private async loadConversationHistory(
@@ -162,27 +177,69 @@ Assistente:`,
   public async generateResponse(
     context: MessageContext,
     userMessage: string,
-    userId: string
+    userId: string,
+    personalizedSettings?: {
+      systemPrompt: string;
+      temperature: number;
+      maxTokens: number;
+      model: string;
+      memorySize: number;
+    }
   ): Promise<AIResponse> {
     const startTime = Date.now();
     
     try {
-      logger.info('LangChain request started', { 
-        model: env.openai.model,
+      // Use personalized settings or defaults
+      const settings = personalizedSettings || {
+        systemPrompt: 'Default system prompt', // Will be updated below
+        temperature: env.openai.temperature,
         maxTokens: env.openai.maxTokens,
+        model: env.openai.model,
+        memorySize: 10
+      };
+
+      logger.info('LangChain request started', { 
+        model: settings.model,
+        maxTokens: settings.maxTokens,
+        temperature: settings.temperature,
         userId
       });
 
-      // Get user-specific memory
-      const memory = this.getOrCreateMemory(userId);
+      // Create personalized model if settings are provided
+      let llmModel = this.chatModel;
+      if (personalizedSettings) {
+        const config = getOpenAIConfig();
+        llmModel = new ChatOpenAI({
+          openAIApiKey: config.apiKey,
+          modelName: settings.model,
+          temperature: settings.temperature,
+          maxTokens: settings.maxTokens,
+          timeout: config.timeout,
+        });
+      }
+
+      // Create personalized prompt template
+      const promptTemplate = new PromptTemplate({
+        template: `${settings.systemPrompt}
+
+Histórico da conversa:
+{history}
+
+Usuário: {input}
+Assistente:`,
+        inputVariables: ['history', 'input'],
+      });
+
+      // Get user-specific memory with personalized size
+      const memory = this.getOrCreatePersonalizedMemory(userId, settings.memorySize);
       
       // Load conversation history
       await this.loadConversationHistory(memory, context);
 
-      // Create a new chain with user-specific memory
+      // Create a new chain with personalized settings
       const userChain = new ConversationChain({
-        llm: this.chatModel,
-        prompt: this.conversationChain.prompt,
+        llm: llmModel,
+        prompt: promptTemplate,
         memory: memory,
         verbose: env.nodeEnv === 'development',
       });
@@ -474,10 +531,19 @@ RESUMO:`,
    * Clear memory for specific user
    */
   public clearUserMemory(userId: string): void {
+    // Clear standard memory
     if (this.memoryMap.has(userId)) {
       const memory = this.memoryMap.get(userId)!;
       memory.clear();
       logger.info('User memory cleared', { userId });
+    }
+    
+    // Clear all personalized memories for this user (different memory sizes)
+    const userMemoryKeys = Array.from(this.memoryMap.keys()).filter(key => key.startsWith(`${userId}_`));
+    for (const key of userMemoryKeys) {
+      const memory = this.memoryMap.get(key)!;
+      memory.clear();
+      logger.info('Personalized user memory cleared', { userId, memoryKey: key });
     }
   }
 

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste QR Code - ZecaBot</title>
+    <meta charset="utf-8">
+</head>
+<body>
+    <h1>Teste QR Code - ZecaBot</h1>
+    <div id="status">Carregando...</div>
+    <div id="qr-container" style="margin: 20px 0;">
+        <pre id="qr-visual" style="font-size: 8px; line-height: 1;"></pre>
+    </div>
+    <img id="qr-image" style="max-width: 300px; display: none;" />
+
+    <script>
+        async function loadQRCode() {
+            try {
+                document.getElementById('status').textContent = 'Buscando QR code...';
+                
+                const response = await fetch('http://localhost:3000/api/qr');
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('status').textContent = 'QR Code carregado com sucesso!';
+                    document.getElementById('qr-visual').textContent = data.qrCodeVisual;
+                    
+                    const img = document.getElementById('qr-image');
+                    img.src = data.qrCodeImage;
+                    img.style.display = 'block';
+                } else {
+                    document.getElementById('status').textContent = 'Erro ao carregar QR code: ' + (data.message || 'Erro desconhecido');
+                }
+            } catch (error) {
+                document.getElementById('status').textContent = 'Erro de conexão: ' + error.message;
+                console.error('Erro:', error);
+            }
+        }
+
+        // Carrega o QR code quando a página carrega
+        window.onload = loadQRCode;
+        
+        // Atualiza a cada 30 segundos
+        setInterval(loadQRCode, 30000);
+    </script>
+</body>
+</html>

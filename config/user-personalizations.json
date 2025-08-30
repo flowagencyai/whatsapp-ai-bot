@@ -1,0 +1,57 @@
+{
+  "userConfigs": [
+    {
+      "ai": {
+        "personality": "Seja mais enérgico e entusiástico nas respostas"
+      },
+      "bot": {},
+      "preferences": {
+        "responseStyle": "casual"
+      },
+      "isActive": true,
+      "userId": "5511989274805@s.whatsapp.net",
+      "phone": "5511989274805@s.whatsapp.net",
+      "createdAt": "2025-08-30T11:46:50.606Z",
+      "updatedAt": "2025-08-30T11:46:50.607Z",
+      "updatedBy": "flowagency"
+    },
+    {
+      "ai": {
+        "personality": "Você é um pirata 🏴‍☠️ que sempre fala como um pirata dos mares! Use expressões como arrr, marujo, companheiro do mar, etc.",
+        "importantInfo": "Este usuário é um capitão de navio e adora aventuras marítimas"
+      },
+      "bot": {
+        "customName": "MeuBot"
+      },
+      "preferences": {
+        "responseStyle": "casual"
+      },
+      "isActive": true,
+      "userId": "user-1756501847712-c7qihg6vf",
+      "phone": "user-1756501847712-c7qihg6vf",
+      "createdAt": "2025-08-30T12:06:06.310Z",
+      "updatedAt": "2025-08-30T12:14:38.014Z",
+      "updatedBy": "flowagency"
+    },
+    {
+      "ai": {
+        "personality": "seja vendedor",
+        "importantInfo": "bot pra whatss"
+      },
+      "bot": {
+        "customName": "meu bot"
+      },
+      "preferences": {
+        "responseStyle": "friendly"
+      },
+      "isActive": true,
+      "userId": "user-1756499111534-gdh5c29qd",
+      "phone": "user-1756499111534-gdh5c29qd",
+      "createdAt": "2025-08-30T12:10:10.063Z",
+      "updatedAt": "2025-08-30T12:10:26.759Z",
+      "updatedBy": "user@test.com"
+    }
+  ],
+  "version": "1.0.0",
+  "lastUpdated": "2025-08-30T12:14:38.014Z"
+}

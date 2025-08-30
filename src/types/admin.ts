@@ -198,3 +198,48 @@ export interface AdminApiError {
   message: string;
   details?: any;
 }
+
+// User-specific personalization configuration
+export interface UserPersonalizationConfig {
+  userId: string;
+  phone: string;
+  ai: {
+    systemPrompt?: string;
+    personality?: string;
+    importantInfo?: string;
+    temperature?: number;
+    maxTokens?: number;
+    model?: string;
+  };
+  bot: {
+    customName?: string;
+    customGreeting?: string;
+    customCommands?: {
+      [key: string]: {
+        enabled: boolean;
+        response: string;
+        description: string;
+      };
+    };
+  };
+  preferences: {
+    language?: 'pt' | 'en' | 'es';
+    timezone?: string;
+    responseStyle?: 'formal' | 'casual' | 'friendly' | 'professional';
+  };
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  updatedBy: string;
+}
+
+// Default user personalization config
+export const DEFAULT_USER_CONFIG: Omit<UserPersonalizationConfig, 'userId' | 'phone' | 'createdAt' | 'updatedAt' | 'updatedBy'> = {
+  ai: {},
+  bot: {},
+  preferences: {
+    language: 'pt',
+    responseStyle: 'friendly'
+  },
+  isActive: true
+};

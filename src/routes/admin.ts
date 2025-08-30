@@ -1,7 +1,8 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { adminConfigManager } from '../services/admin/configManager.js';
 import { adminStatsManager } from '../services/admin/statsManager.js';
-import { AdminApiResponse, AdminConfigUpdate, AdminBulkAction } from '../types/admin.js';
+import { personalizationService } from '../services/personalization/personalizationService.js';
+import { AdminApiResponse, AdminConfigUpdate, AdminBulkAction, UserPersonalizationConfig } from '../types/admin.js';
 import { authenticate, requirePermission, requireAnyPermission } from '../middleware/auth.js';
 import { logger } from '../utils/logger.js';
 
@@ -397,6 +398,143 @@ adminRouter.post('/bulk-actions', requirePermission('users:bulk_actions'), async
       success: true,
       data: result,
       message,
+      timestamp: new Date().toISOString()
+    };
+
+    res.json(response);
+  } catch (error) {
+    throw error;
+  }
+});
+
+/**
+ * PERSONALIZATION MANAGEMENT ENDPOINTS
+ */
+
+/**
+ * GET /admin/personalizations
+ * Get all user personalization configs
+ */
+adminRouter.get('/personalizations', requirePermission('users:read'), async (req: Request, res: Response) => {
+  try {
+    const personalizations = personalizationService.getAllUserConfigs();
+
+    const response: AdminApiResponse<UserPersonalizationConfig[]> = {
+      success: true,
+      data: personalizations,
+      timestamp: new Date().toISOString()
+    };
+
+    res.json(response);
+  } catch (error) {
+    throw error;
+  }
+});
+
+/**
+ * GET /admin/personalizations/:userId
+ * Get specific user personalization config
+ */
+adminRouter.get('/personalizations/:userId', requirePermission('users:read'), async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const userPhone = userId; // In our system, userId is the phone number
+    
+    const config = personalizationService.getUserConfig(userId, userPhone);
+
+    const response: AdminApiResponse<UserPersonalizationConfig> = {
+      success: true,
+      data: config,
+      timestamp: new Date().toISOString()
+    };
+
+    res.json(response);
+  } catch (error) {
+    throw error;
+  }
+});
+
+/**
+ * PUT /admin/personalizations/:userId
+ * Update user personalization config
+ */
+adminRouter.put('/personalizations/:userId', requirePermission('users:write'), async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const updates = req.body;
+    const updatedBy = req.user?.username || 'admin';
+    const userPhone = userId; // In our system, userId is the phone number
+
+    // Ensure user config exists first
+    personalizationService.getUserConfig(userId, userPhone);
+    
+    const updatedConfig = personalizationService.updateUserConfig(userId, updates, updatedBy);
+
+    const response: AdminApiResponse<UserPersonalizationConfig> = {
+      success: true,
+      data: updatedConfig,
+      message: 'User personalization updated successfully',
+      timestamp: new Date().toISOString()
+    };
+
+    res.json(response);
+  } catch (error) {
+    throw error;
+  }
+});
+
+/**
+ * DELETE /admin/personalizations/:userId
+ * Delete user personalization config
+ */
+adminRouter.delete('/personalizations/:userId', requirePermission('users:delete'), async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    
+    const deleted = personalizationService.deleteUserConfig(userId);
+
+    if (!deleted) {
+      const response: AdminApiResponse = {
+        success: false,
+        error: 'User personalization config not found',
+        timestamp: new Date().toISOString()
+      };
+      return res.status(404).json(response);
+    }
+
+    const response: AdminApiResponse = {
+      success: true,
+      message: 'User personalization deleted successfully',
+      timestamp: new Date().toISOString()
+    };
+
+    res.json(response);
+  } catch (error) {
+    throw error;
+  }
+});
+
+/**
+ * POST /admin/personalizations/:userId/reset
+ * Reset user personalization to defaults
+ */
+adminRouter.post('/personalizations/:userId/reset', requirePermission('users:write'), async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const userPhone = userId; // In our system, userId is the phone number
+    const updatedBy = req.user?.username || 'admin';
+
+    // Delete current config and get fresh default
+    personalizationService.deleteUserConfig(userId);
+    const defaultConfig = personalizationService.getUserConfig(userId, userPhone);
+    
+    // Update the updatedBy field
+    const resetConfig = personalizationService.updateUserConfig(userId, {}, updatedBy);
+
+    const response: AdminApiResponse<UserPersonalizationConfig> = {
+      success: true,
+      data: resetConfig,
+      message: 'User personalization reset to defaults',
       timestamp: new Date().toISOString()
     };
 

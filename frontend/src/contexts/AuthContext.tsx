@@ -12,6 +12,7 @@ interface AuthContextType {
   hasPermission: (permission: string) => boolean;
   hasRole: (role: string) => boolean;
   hasAnyPermission: (permissions: string[]) => boolean;
+  getToken: () => string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -105,6 +106,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return permissions.some(permission => user.permissions.includes(permission));
   };
 
+  const getToken = (): string | null => {
+    return authService.getToken();
+  };
+
   const value: AuthContextType = {
     user,
     loading,
@@ -114,6 +119,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     hasPermission,
     hasRole,
     hasAnyPermission,
+    getToken,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

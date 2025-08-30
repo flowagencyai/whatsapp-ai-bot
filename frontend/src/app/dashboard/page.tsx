@@ -30,24 +30,40 @@ import {
   Eye,
   Pause,
   Play,
-  RotateCcw
+  RotateCcw,
+  Palette,
+  Save,
+  Loader2
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { formatRelativeTime, extractNameFromJid } from '@/lib/utils';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { ConversationMessagesModal } from '@/components/ui/conversation-messages-modal';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
 
 export default function UserDashboardPage() {
-  const { user, logout } = useAuth();
+  const { user, logout, getToken } = useAuth();
   const router = useRouter();
   const { status, isLoading: botLoading, refetch, pauseBot, resumeBot } = useBotStatus();
   const { conversations, isLoading: conversationsLoading, refreshConversations } = useConversations();
   const { confirm } = useConfirm();
+  const { addToast } = useToast();
   const [activeTab, setActiveTab] = useState('overview');
   const [searchTerm, setSearchTerm] = useState('');
   const [isClient, setIsClient] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isActionLoading, setIsActionLoading] = useState(false);
+
+  // Personalization states
+  const [personalizationLoading, setPersonalizationLoading] = useState(false);
+  const [savingPersonalization, setSavingPersonalization] = useState(false);
+  const [personality, setPersonality] = useState('');
+  const [importantInfo, setImportantInfo] = useState('');
+  const [responseStyle, setResponseStyle] = useState('friendly');
+  const [customName, setCustomName] = useState('');
+  const [customGreeting, setCustomGreeting] = useState('');
   const [selectedConversation, setSelectedConversation] = useState<{
     userId: string;
     userName: string;
@@ -60,6 +76,97 @@ export default function UserDashboardPage() {
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  // Load personalization when settings tab is opened
+  useEffect(() => {
+    if (activeTab === 'settings') {
+      loadPersonalization();
+    }
+  }, [activeTab]);
+
+  const responseStyles = [
+    { value: 'formal', label: 'Formal', description: 'Linguagem respeitosa e profissional' },
+    { value: 'casual', label: 'Descontraído', description: 'Linguagem casual e relaxada' },
+    { value: 'friendly', label: 'Amigável', description: 'Linguagem acolhedora e simpática' },
+    { value: 'professional', label: 'Profissional', description: 'Linguagem técnica e direta' },
+  ];
+
+  const loadPersonalization = async () => {
+    try {
+      setPersonalizationLoading(true);
+      const token = await getToken();
+      const response = await fetch('/api/user/personalization', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Update form fields
+        setPersonality(data.data.ai.personality || '');
+        setImportantInfo(data.data.ai.importantInfo || '');
+        setCustomName(data.data.bot.customName || '');
+        setCustomGreeting(data.data.bot.customGreeting || '');
+        setResponseStyle(data.data.preferences.responseStyle || 'friendly');
+      }
+    } catch (error) {
+      console.error('Error loading personalization:', error);
+    } finally {
+      setPersonalizationLoading(false);
+    }
+  };
+
+  const savePersonalization = async () => {
+    try {
+      setSavingPersonalization(true);
+      const token = await getToken();
+      
+      const updateData = {
+        ai: {
+          ...(personality && { personality }),
+          ...(importantInfo && { importantInfo }),
+        },
+        bot: {
+          ...(customName && { customName }),
+          ...(customGreeting && { customGreeting }),
+        },
+        preferences: {
+          responseStyle,
+        },
+      };
+
+      const response = await fetch('/api/user/personalization', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      if (response.ok) {
+        addToast({
+          type: 'success',
+          title: 'Personalização salva!',
+          description: 'Suas preferências foram atualizadas com sucesso.',
+        });
+      } else {
+        throw new Error('Failed to save personalization');
+      }
+    } catch (error) {
+      console.error('Error saving personalization:', error);
+      addToast({
+        type: 'error',
+        title: 'Erro ao salvar',
+        description: 'Não foi possível salvar suas personalizações.',
+      });
+    } finally {
+      setSavingPersonalization(false);
+    }
+  };
 
   // Função para encontrar o número WhatsApp do usuário logado
   const findUserWhatsAppNumber = async (): Promise<string | null> => {
@@ -811,6 +918,162 @@ export default function UserDashboardPage() {
                         <li>Ver informações básicas do sistema</li>
                       </ul>
                     </div>
+                  </div>
+
+                  {/* Personalização do Bot */}
+                  <div className="border-t pt-6">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Palette className="w-5 h-5 text-blue-500" />
+                      <h3 className="text-lg font-medium">Personalização do Bot</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-6">
+                      Configure como você gostaria que o ZecaBot interaja especificamente com você
+                    </p>
+
+                    {personalizationLoading ? (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Carregando personalizações...</span>
+                      </div>
+                    ) : (
+                      <div className="space-y-6">
+                        {/* Personalidade */}
+                        <div>
+                          <Label htmlFor="personality" className="text-sm font-medium">
+                            Personalidade do Bot
+                          </Label>
+                          <p className="text-xs text-muted-foreground mb-2">
+                            Descreva como você gostaria que o bot se comporte nas conversas com você
+                          </p>
+                          <textarea
+                            id="personality"
+                            className="w-full min-h-[80px] p-3 border rounded-md resize-none text-sm"
+                            placeholder="Ex: Seja mais enérgico e entusiástico nas respostas, use emojis quando apropriado..."
+                            value={personality}
+                            onChange={(e) => setPersonality(e.target.value)}
+                          />
+                        </div>
+
+                        {/* Informações Importantes */}
+                        <div>
+                          <Label htmlFor="important-info" className="text-sm font-medium">
+                            Informações Importantes sobre Você
+                          </Label>
+                          <p className="text-xs text-muted-foreground mb-2">
+                            Informações que o bot deve saber para te atender melhor
+                          </p>
+                          <textarea
+                            id="important-info"
+                            className="w-full min-h-[60px] p-3 border rounded-md resize-none text-sm"
+                            placeholder="Ex: Trabalho com vendas online, prefiro respostas diretas, sou do setor de marketing..."
+                            value={importantInfo}
+                            onChange={(e) => setImportantInfo(e.target.value)}
+                          />
+                        </div>
+
+                        {/* Estilo de Resposta */}
+                        <div>
+                          <Label className="text-sm font-medium">Estilo de Resposta</Label>
+                          <p className="text-xs text-muted-foreground mb-3">
+                            Escolha o tom das respostas do bot
+                          </p>
+                          <div className="grid grid-cols-2 gap-3">
+                            {responseStyles.map((style) => (
+                              <div
+                                key={style.value}
+                                className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                                  responseStyle === style.value
+                                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30'
+                                    : 'border-gray-200 hover:border-gray-300'
+                                }`}
+                                onClick={() => setResponseStyle(style.value)}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <div className="font-medium text-sm">{style.label}</div>
+                                    <div className="text-xs text-muted-foreground">
+                                      {style.description}
+                                    </div>
+                                  </div>
+                                  {responseStyle === style.value && (
+                                    <div className="h-2 w-2 rounded-full bg-blue-500" />
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Customizações (opcional) */}
+                        <div>
+                          <Label className="text-sm font-medium">Customizações (Opcional)</Label>
+                          <p className="text-xs text-muted-foreground mb-3">
+                            Personalize nome e saudação do bot
+                          </p>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor="custom-name" className="text-xs text-muted-foreground">
+                                Nome Personalizado do Bot
+                              </Label>
+                              <Input
+                                id="custom-name"
+                                placeholder="Ex: MeuAssistente (padrão: ZecaBot)"
+                                value={customName}
+                                onChange={(e) => setCustomName(e.target.value)}
+                                className="text-sm"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="custom-greeting" className="text-xs text-muted-foreground">
+                                Saudação Personalizada
+                              </Label>
+                              <Input
+                                id="custom-greeting"
+                                placeholder="Ex: Olá! Sou seu assistente pessoal..."
+                                value={customGreeting}
+                                onChange={(e) => setCustomGreeting(e.target.value)}
+                                className="text-sm"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Botão Salvar */}
+                        <div className="flex gap-3 pt-4 border-t">
+                          <Button 
+                            onClick={savePersonalization} 
+                            disabled={savingPersonalization}
+                            className="bg-blue-600 hover:bg-blue-700"
+                          >
+                            {savingPersonalization ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Salvando...
+                              </>
+                            ) : (
+                              <>
+                                <Save className="mr-2 h-4 w-4" />
+                                Salvar Personalizações
+                              </>
+                            )}
+                          </Button>
+                          
+                          <Button 
+                            variant="outline"
+                            onClick={() => {
+                              setPersonality('');
+                              setImportantInfo('');
+                              setCustomName('');
+                              setCustomGreeting('');
+                              setResponseStyle('friendly');
+                            }}
+                          >
+                            <RotateCcw className="mr-2 h-4 w-4" />
+                            Limpar
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardContent>

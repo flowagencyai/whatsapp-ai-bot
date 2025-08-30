@@ -17,6 +17,7 @@ import {
   Menu,
   X,
   Shield,
+  Palette,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -59,6 +60,13 @@ const navItems: NavItem[] = [
     description: 'Gerenciar conversas',
     permission: 'conversations:read',
     roles: ['super_admin', 'admin', 'operator', 'viewer']
+  },
+  {
+    title: 'Personalização',
+    href: '/personalization',
+    icon: Palette,
+    description: 'Personalizar seu bot',
+    // Sem permission/roles - visível para todos os usuários autenticados
   },
   {
     title: 'Logs do Sistema',

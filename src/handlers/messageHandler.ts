@@ -11,6 +11,7 @@ import { whatsappConnection } from '@/connection/whatsapp';
 import { Redis } from '@/services/memory/redisClient';
 import { langchainService } from '@/services/ai/langchain';
 import { audioProcessor } from '@/services/media/audioProcessor';
+import { personalizationService } from '@/services/personalization/personalizationService';
 import { logger } from '@/utils/logger';
 import { env } from '@/config/env';
 
@@ -207,8 +208,17 @@ class MessageHandler {
     try {
       logger.debug('Processing text message', { userId, textLength: text.length });
 
-      // Generate AI response
-      const aiResponse = await langchainService.generateResponse(context, text, userId);
+      // Get personalized AI settings for this user
+      const userPhone = userId; // userId in our case is the phone number
+      const personalizedSettings = personalizationService.getPersonalizedAISettings(userId, userPhone);
+
+      // Generate AI response with personalized settings
+      const aiResponse = await langchainService.generateResponse(
+        context, 
+        text, 
+        userId, 
+        personalizedSettings
+      );
 
       // Send response
       await whatsappConnection.sendMessage(userId, aiResponse.content);
@@ -405,7 +415,9 @@ class MessageHandler {
         case CommandType.RESET:
           await Redis.clearContext(userId);
           langchainService.clearUserMemory(userId); // Clear LangChain memory too
-          responseMessage = '🔄 Conversa reiniciada! Olá, como posso ajudá-lo hoje?';
+          // Use personalized greeting for this user
+          const userPhone = userId; // userId in our case is the phone number
+          responseMessage = personalizationService.getPersonalizedGreeting(userId, userPhone);
           break;
 
         case CommandType.PAUSE:
