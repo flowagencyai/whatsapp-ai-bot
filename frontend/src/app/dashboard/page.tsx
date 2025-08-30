@@ -26,11 +26,16 @@ import {
   CheckCircle,
   AlertCircle,
   Phone,
-  Search
+  Search,
+  Eye,
+  Pause,
+  Play,
+  RotateCcw
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { formatRelativeTime, extractNameFromJid } from '@/lib/utils';
 import { useConfirm } from '@/components/ui/confirm-dialog';
+import { ConversationMessagesModal } from '@/components/ui/conversation-messages-modal';
 
 export default function UserDashboardPage() {
   const { user, logout } = useAuth();
@@ -43,6 +48,14 @@ export default function UserDashboardPage() {
   const [isClient, setIsClient] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isActionLoading, setIsActionLoading] = useState(false);
+  const [selectedConversation, setSelectedConversation] = useState<{
+    userId: string;
+    userName: string;
+    userPhone: string;
+    status: 'active' | 'paused' | 'ended';
+  } | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   useEffect(() => {
     setIsClient(true);
@@ -75,6 +88,66 @@ export default function UserDashboardPage() {
   const handleLogout = async () => {
     await logout();
     router.replace('/');
+  };
+
+  const handleViewMessages = (conversation: any) => {
+    const userId = conversation.userId || conversation.remoteJid;
+    setSelectedConversation({
+      userId,
+      userName: conversation.name,
+      userPhone: extractNameFromJid(conversation.remoteJid),
+      status: conversation.status
+    });
+    setIsModalOpen(true);
+  };
+
+  const handlePauseToggle = async (userId: string, currentStatus: string) => {
+    try {
+      setActionLoading(userId);
+      const endpoint = currentStatus === 'active' ? 'pause' : 'resume';
+      
+      const response = await fetch(`http://localhost:3000/users/${encodeURIComponent(userId)}/${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (response.ok) {
+        await refreshConversations();
+        if (selectedConversation?.userId === userId) {
+          setSelectedConversation(prev => prev ? {
+            ...prev,
+            status: endpoint === 'pause' ? 'paused' : 'active'
+          } : null);
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling pause status:', error);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleResetUserContext = async (userId: string) => {
+    try {
+      setActionLoading(`reset-${userId}`);
+      
+      const response = await fetch(`http://localhost:3000/users/${encodeURIComponent(userId)}/context`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        await refreshConversations();
+      }
+    } catch (error) {
+      console.error('Error resetting context:', error);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setSelectedConversation(null);
   };
 
   const handlePauseBot = async () => {
@@ -580,6 +653,44 @@ export default function UserDashboardPage() {
 
                           <div className="flex items-center gap-2">
                             {getStatusBadge(conversation.status)}
+                            
+                            <div className="flex gap-1">
+                              <Button 
+                                size="icon" 
+                                variant="ghost" 
+                                className="h-8 w-8"
+                                onClick={() => handleViewMessages(conversation)}
+                                title="Ver mensagens"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              
+                              <Button 
+                                size="icon" 
+                                variant="ghost" 
+                                className="h-8 w-8"
+                                onClick={() => handlePauseToggle(conversation.userId || conversation.remoteJid, conversation.status)}
+                                disabled={actionLoading === (conversation.userId || conversation.remoteJid)}
+                                title={conversation.status === 'active' ? 'Pausar' : 'Retomar'}
+                              >
+                                {conversation.status === 'active' ? (
+                                  <Pause className="h-4 w-4" />
+                                ) : (
+                                  <Play className="h-4 w-4" />
+                                )}
+                              </Button>
+                              
+                              <Button 
+                                size="icon" 
+                                variant="ghost" 
+                                className="h-8 w-8"
+                                onClick={() => handleResetUserContext(conversation.userId || conversation.remoteJid)}
+                                disabled={actionLoading === `reset-${(conversation.userId || conversation.remoteJid)}`}
+                                title="Reset contexto"
+                              >
+                                <RotateCcw className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       ))
@@ -706,6 +817,20 @@ export default function UserDashboardPage() {
             </Card>
           )}
         </main>
+
+        {/* Conversation Messages Modal */}
+        {selectedConversation && (
+          <ConversationMessagesModal
+            isOpen={isModalOpen}
+            onClose={handleModalClose}
+            userId={selectedConversation.userId}
+            userName={selectedConversation.userName}
+            userPhone={selectedConversation.userPhone}
+            conversationStatus={selectedConversation.status}
+            onPauseToggle={handlePauseToggle}
+            onResetContext={handleResetUserContext}
+          />
+        )}
       </div>
     </ProtectedRoute>
   );

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ConversationMessagesModal } from '@/components/ui/conversation-messages-modal';
 import { 
   ArrowLeft, 
   Search, 
@@ -17,7 +18,8 @@ import {
   Clock,
   Users,
   Phone,
-  RefreshCw
+  RefreshCw,
+  Eye
 } from 'lucide-react';
 import { formatRelativeTime, extractNameFromJid } from '@/lib/utils';
 import { useConversations } from '@/hooks/useConversations';
@@ -29,6 +31,14 @@ export default function ConversationsPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [isClient, setIsClient] = useState(false);
+  const [selectedConversation, setSelectedConversation] = useState<{
+    userId: string;
+    userName: string;
+    userPhone: string;
+    status: 'active' | 'paused' | 'ended';
+  } | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   useEffect(() => {
     setIsClient(true);
@@ -40,6 +50,71 @@ export default function ConversationsPage() {
                          conv.lastMessage.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesStatus && matchesSearch;
   });
+
+  const handleViewMessages = (conversation: any) => {
+    const userId = conversation.userId || conversation.remoteJid;
+    setSelectedConversation({
+      userId,
+      userName: conversation.name,
+      userPhone: extractNameFromJid(conversation.remoteJid),
+      status: conversation.status
+    });
+    setIsModalOpen(true);
+  };
+
+  const handlePauseToggle = async (userId: string, currentStatus: string) => {
+    try {
+      setActionLoading(userId);
+      const endpoint = currentStatus === 'active' ? 'pause' : 'resume';
+      
+      const response = await fetch(`http://localhost:3000/users/${encodeURIComponent(userId)}/${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (response.ok) {
+        await refreshConversations();
+        // Update selected conversation status if it's currently open
+        if (selectedConversation?.userId === userId) {
+          setSelectedConversation(prev => prev ? {
+            ...prev,
+            status: endpoint === 'pause' ? 'paused' : 'active'
+          } : null);
+        }
+      } else {
+        console.error('Failed to toggle pause status');
+      }
+    } catch (error) {
+      console.error('Error toggling pause status:', error);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleResetContext = async (userId: string) => {
+    try {
+      setActionLoading(`reset-${userId}`);
+      
+      const response = await fetch(`http://localhost:3000/users/${encodeURIComponent(userId)}/context`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        await refreshConversations();
+      } else {
+        console.error('Failed to reset context');
+      }
+    } catch (error) {
+      console.error('Error resetting context:', error);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setSelectedConversation(null);
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -285,17 +360,39 @@ export default function ConversationsPage() {
                     {getStatusBadge(conversation.status)}
                     
                     <div className="flex gap-1">
-                      {conversation.status === 'active' ? (
-                        <Button size="icon" variant="ghost" className="h-8 w-8">
-                          <Pause className="h-4 w-4" />
-                        </Button>
-                      ) : (
-                        <Button size="icon" variant="ghost" className="h-8 w-8">
-                          <Play className="h-4 w-4" />
-                        </Button>
-                      )}
+                      <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        className="h-8 w-8"
+                        onClick={() => handleViewMessages(conversation)}
+                        title="Ver mensagens"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
                       
-                      <Button size="icon" variant="ghost" className="h-8 w-8">
+                      <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        className="h-8 w-8"
+                        onClick={() => handlePauseToggle(conversation.userId || conversation.remoteJid, conversation.status)}
+                        disabled={actionLoading === (conversation.userId || conversation.remoteJid)}
+                        title={conversation.status === 'active' ? 'Pausar' : 'Retomar'}
+                      >
+                        {conversation.status === 'active' ? (
+                          <Pause className="h-4 w-4" />
+                        ) : (
+                          <Play className="h-4 w-4" />
+                        )}
+                      </Button>
+                      
+                      <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        className="h-8 w-8"
+                        onClick={() => handleResetContext(conversation.userId || conversation.remoteJid)}
+                        disabled={actionLoading === `reset-${(conversation.userId || conversation.remoteJid)}`}
+                        title="Reset contexto"
+                      >
                         <RotateCcw className="h-4 w-4" />
                       </Button>
                     </div>
@@ -306,6 +403,20 @@ export default function ConversationsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Conversation Messages Modal */}
+      {selectedConversation && (
+        <ConversationMessagesModal
+          isOpen={isModalOpen}
+          onClose={handleModalClose}
+          userId={selectedConversation.userId}
+          userName={selectedConversation.userName}
+          userPhone={selectedConversation.userPhone}
+          conversationStatus={selectedConversation.status}
+          onPauseToggle={handlePauseToggle}
+          onResetContext={handleResetContext}
+        />
+      )}
     </div>
   );
 }

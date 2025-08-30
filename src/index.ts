@@ -349,6 +349,41 @@ class WhatsAppBot {
       }
     });
 
+    // Get conversation messages endpoint
+    this.app.get('/api/conversations/:userId/messages', async (req, res) => {
+      try {
+        const { userId } = req.params;
+        const context = await Redis.getContext(userId);
+        
+        if (!context) {
+          return res.json({
+            success: true,
+            messages: [],
+            total: 0,
+            userId,
+            timestamp: new Date().toISOString(),
+            note: "Nenhum contexto encontrado para este usuário."
+          });
+        }
+        
+        res.json({
+          success: true,
+          messages: context.messages,
+          total: context.messages.length,
+          userId,
+          metadata: context.metadata,
+          isPaused: context.isPaused,
+          timestamp: new Date().toISOString()
+        });
+      } catch (error) {
+        logger.error('Conversation messages endpoint error', { error: error as Error, userId: req.params.userId });
+        res.status(500).json({
+          error: 'Failed to get conversation messages',
+          details: (error as Error).message,
+        });
+      }
+    });
+
     // Test endpoint to create sample data (development only)
     this.app.post('/api/test/create-conversations', async (req, res) => {
       if (env.nodeEnv !== 'development') {
