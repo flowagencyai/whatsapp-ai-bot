@@ -273,6 +273,45 @@ class RedisClient {
     return this.removePause(userId);
   }
 
+  // Global Bot Pause Management
+  public async isBotPaused(): Promise<boolean> {
+    try {
+      const key = 'bot_global_pause';
+      return await memoryCache.exists(key);
+    } catch (error) {
+      logger.error('Error checking global bot pause status', { error: error as Error });
+      return false;
+    }
+  }
+
+  public async pauseBot(duration: number): Promise<void> {
+    try {
+      const key = 'bot_global_pause';
+      const pauseData = {
+        pausedAt: Date.now(),
+        resumeAt: Date.now() + duration,
+        duration
+      };
+      
+      await memoryCache.set(key, JSON.stringify(pauseData), Math.ceil(duration / 1000));
+      logger.info('Bot paused globally', { durationMs: duration });
+    } catch (error) {
+      logger.error('Error setting global bot pause', { error: error as Error });
+      throw error;
+    }
+  }
+
+  public async resumeBot(): Promise<void> {
+    try {
+      const key = 'bot_global_pause';
+      await memoryCache.del(key);
+      logger.info('Bot resumed globally');
+    } catch (error) {
+      logger.error('Error removing global bot pause', { error: error as Error });
+      throw error;
+    }
+  }
+
   public async healthCheck(): Promise<{ status: 'healthy' | 'unhealthy'; details: Record<string, unknown> }> {
     try {
       const isHealthy = await this.isHealthy();

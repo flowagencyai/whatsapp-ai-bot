@@ -64,9 +64,16 @@ class MessageHandler {
         return;
       }
 
-      // Check if user is paused
-      const isPaused = await Redis.isPaused(userId);
-      if (isPaused) {
+      // Check if bot is globally paused
+      const isBotPaused = await Redis.isBotPaused();
+      if (isBotPaused) {
+        logger.debug('Bot is globally paused, skipping message', { userId });
+        return;
+      }
+
+      // Check if user is individually paused
+      const isUserPaused = await Redis.isPaused(userId);
+      if (isUserPaused) {
         logger.debug('User is paused, skipping message', { userId });
         return;
       }

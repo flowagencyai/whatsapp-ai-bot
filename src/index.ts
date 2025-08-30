@@ -266,6 +266,46 @@ class WhatsAppBot {
       }
     });
 
+    // Global Bot Control endpoints
+    this.app.post('/api/bot/pause', async (req, res) => {
+      try {
+        const { duration = env.cache.pauseTtl * 1000 } = req.body;
+        
+        await Redis.pauseBot(duration);
+        
+        res.json({
+          success: true,
+          message: `Bot paused globally for ${Math.round(duration / 60000)} minutes`,
+          pausedUntil: new Date(Date.now() + duration).toISOString(),
+          timestamp: new Date().toISOString(),
+        });
+      } catch (error) {
+        logger.error('Bot pause endpoint error', { error: error as Error });
+        res.status(500).json({
+          error: 'Failed to pause bot',
+          details: (error as Error).message,
+        });
+      }
+    });
+
+    this.app.post('/api/bot/resume', async (req, res) => {
+      try {
+        await Redis.resumeBot();
+        
+        res.json({
+          success: true,
+          message: 'Bot resumed globally',
+          timestamp: new Date().toISOString(),
+        });
+      } catch (error) {
+        logger.error('Bot resume endpoint error', { error: error as Error });
+        res.status(500).json({
+          error: 'Failed to resume bot',
+          details: (error as Error).message,
+        });
+      }
+    });
+
     // Disconnect WhatsApp endpoint
     this.app.post('/api/disconnect', async (req, res) => {
       try {

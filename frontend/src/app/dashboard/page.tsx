@@ -48,15 +48,43 @@ export default function UserDashboardPage() {
     setIsClient(true);
   }, []);
 
+  // Função para encontrar o número WhatsApp do usuário logado
+  const findUserWhatsAppNumber = async (): Promise<string | null> => {
+    try {
+      // Buscar conversas ativas para encontrar o número do usuário
+      const response = await fetch('http://localhost:3000/api/conversations');
+      if (!response.ok) return null;
+      
+      const data = await response.json();
+      if (!data.success || !data.conversations?.length) return null;
+      
+      // Para usuário não-admin, retornar o primeiro número encontrado nas conversas
+      // (assumindo que é o número do usuário que está usando o dashboard)
+      const firstConversation = data.conversations[0];
+      if (firstConversation?.userId) {
+        return firstConversation.userId;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Erro ao buscar número WhatsApp:', error);
+      return null;
+    }
+  };
+
   const handleLogout = async () => {
     await logout();
     router.replace('/');
   };
 
   const handlePauseBot = async () => {
+    const isAdmin = user?.role === 'super_admin' || user?.role === 'admin';
+    
     const confirmed = await confirm({
-      title: 'Pausar Bot WhatsApp',
-      description: 'O bot será pausado por 1 hora. Durante este período, não responderá a novas mensagens.',
+      title: isAdmin ? 'Pausar Bot WhatsApp (Global)' : 'Pausar Atendimento',
+      description: isAdmin 
+        ? 'O bot será pausado GLOBALMENTE por 1 hora. Todos os usuários deixarão de receber respostas.'
+        : 'Você será pausado por 1 hora. Durante este período, o bot não responderá às suas mensagens.',
       confirmText: 'Sim, pausar',
       cancelText: 'Cancelar',
       variant: 'default',
@@ -66,19 +94,47 @@ export default function UserDashboardPage() {
     if (confirmed) {
       setIsActionLoading(true);
       try {
-        await pauseBot(3600); // 1 hour in seconds
+        if (isAdmin) {
+          // Admin pausa globalmente
+          await pauseBot(3600); // 1 hour in seconds
+        } else {
+          // Usuário pausa apenas para si - buscar número automaticamente
+          const userWhatsAppNumber = await findUserWhatsAppNumber();
+          
+          if (!userWhatsAppNumber) {
+            throw new Error('Nenhuma conversa WhatsApp encontrada. Envie uma mensagem primeiro.');
+          }
+          
+          const response = await fetch(`http://localhost:3000/users/${encodeURIComponent(userWhatsAppNumber)}/pause`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ duration: 3600000 }), // 1 hour in milliseconds
+          });
+          
+          if (!response.ok) {
+            throw new Error('Falha ao pausar usuário');
+          }
+        }
         setIsPaused(true);
       } catch (error) {
-        console.error('Erro ao pausar bot:', error);
+        console.error('Erro ao pausar:', error);
+        // Mostrar erro para o usuário via toast ou alert
+        alert((error as Error).message);
       }
       setIsActionLoading(false);
     }
   };
 
   const handleResumeBot = async () => {
+    const isAdmin = user?.role === 'super_admin' || user?.role === 'admin';
+    
     const confirmed = await confirm({
-      title: 'Retomar Bot WhatsApp',
-      description: 'O bot voltará a responder mensagens normalmente.',
+      title: isAdmin ? 'Retomar Bot WhatsApp (Global)' : 'Retomar Atendimento',
+      description: isAdmin
+        ? 'O bot voltará a responder mensagens de todos os usuários normalmente.'
+        : 'Você voltará a receber respostas do bot normalmente.',
       confirmText: 'Sim, retomar',
       cancelText: 'Cancelar',
       variant: 'success',
@@ -88,10 +144,33 @@ export default function UserDashboardPage() {
     if (confirmed) {
       setIsActionLoading(true);
       try {
-        await resumeBot();
+        if (isAdmin) {
+          // Admin retoma globalmente
+          await resumeBot();
+        } else {
+          // Usuário retoma apenas para si - buscar número automaticamente
+          const userWhatsAppNumber = await findUserWhatsAppNumber();
+          
+          if (!userWhatsAppNumber) {
+            throw new Error('Nenhuma conversa WhatsApp encontrada. Envie uma mensagem primeiro.');
+          }
+          
+          const response = await fetch(`http://localhost:3000/users/${encodeURIComponent(userWhatsAppNumber)}/resume`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          if (!response.ok) {
+            throw new Error('Falha ao retomar usuário');
+          }
+        }
         setIsPaused(false);
       } catch (error) {
-        console.error('Erro ao retomar bot:', error);
+        console.error('Erro ao retomar:', error);
+        // Mostrar erro para o usuário via toast ou alert
+        alert((error as Error).message);
       }
       setIsActionLoading(false);
     }
@@ -296,7 +375,7 @@ export default function UserDashboardPage() {
                             className="text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50"
                           >
                             <Clock className="h-4 w-4 mr-2" />
-                            {isActionLoading ? 'Pausando...' : 'Pausar Bot'}
+                            {isActionLoading ? 'Pausando...' : (user?.role === 'super_admin' || user?.role === 'admin' ? 'Pausar Bot' : 'Pausar Atendimento')}
                           </Button>
                         ) : (
                           <Button
@@ -307,7 +386,7 @@ export default function UserDashboardPage() {
                             className="text-green-600 hover:text-green-700 hover:bg-green-50"
                           >
                             <Activity className="h-4 w-4 mr-2" />
-                            {isActionLoading ? 'Retomando...' : 'Retomar Bot'}
+                            {isActionLoading ? 'Retomando...' : (user?.role === 'super_admin' || user?.role === 'admin' ? 'Retomar Bot' : 'Retomar Atendimento')}
                           </Button>
                         )}
                         
