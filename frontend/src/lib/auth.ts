@@ -32,9 +32,9 @@ interface LoginCredentials {
 class AuthService {
   private static instance: AuthService;
   private baseURL: string;
-  private tokenKey = 'whatsapp-bot-token';
-  private refreshTokenKey = 'whatsapp-bot-refresh-token';
-  private userKey = 'whatsapp-bot-user';
+  private tokenKey = 'zecabot-token';
+  private refreshTokenKey = 'zecabot-refresh-token';
+  private userKey = 'zecabot-user';
 
   private constructor() {
     this.baseURL = 'http://localhost:3000/api/auth';

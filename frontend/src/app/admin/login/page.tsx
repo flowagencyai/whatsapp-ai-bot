@@ -86,7 +86,7 @@ export default function LoginPage() {
               <Lock className="w-6 h-6 text-green-600" />
             </div>
           </div>
-          <CardTitle className="text-2xl text-center">WhatsApp Bot Admin</CardTitle>
+          <CardTitle className="text-2xl text-center">ZecaBot Admin</CardTitle>
           <CardDescription className="text-center">
             Faça login para acessar o painel administrativo
           </CardDescription>

@@ -120,7 +120,7 @@ export default function SettingsPage() {
         <div className="flex-1">
           <h1 className="text-3xl font-bold tracking-tight">Configurações</h1>
           <p className="text-muted-foreground">
-            Configure o comportamento do WhatsApp Bot
+            Configure o comportamento do ZecaBot
           </p>
         </div>
 

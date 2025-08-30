@@ -18,8 +18,8 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <head>
-        <title>WhatsApp Bot AI - Sistema Inteligente</title>
-        <meta name="description" content="Sistema completo de automação WhatsApp com IA avançada" />
+        <title>ZecaBot - Sistema Inteligente de Automação WhatsApp</title>
+        <meta name="description" content="ZecaBot - Sistema completo de automação WhatsApp com IA avançada" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </head>

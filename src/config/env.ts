@@ -34,8 +34,8 @@ const EnvSchema = z.object({
   REDIS_URL: z.string().optional(),
 
   // Bot Configuration
-  BOT_NAME: z.string().default('WhatsApp AI Bot'),
-  BOT_SESSION_NAME: z.string().default('whatsapp-session'),
+  BOT_NAME: z.string().default('ZecaBot'),
+  BOT_SESSION_NAME: z.string().default('zecabot-session'),
   BOT_RECONNECT_INTERVAL: z.string().transform(Number).pipe(z.number().int().positive()).default('5000'),
   BOT_MAX_RECONNECT_ATTEMPTS: z.string().transform(Number).pipe(z.number().int().positive()).default('10'),
 

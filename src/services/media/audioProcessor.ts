@@ -18,7 +18,7 @@ class AudioProcessor {
   private tempDir: string;
 
   private constructor() {
-    this.tempDir = join(tmpdir(), 'whatsapp-bot');
+    this.tempDir = join(tmpdir(), 'zecabot');
     this.ensureTempDir();
   }
 

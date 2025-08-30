@@ -134,7 +134,7 @@ export function Sidebar({ isOpen = true, onToggle, className }: SidebarProps) {
           <div className="flex items-center gap-2">
             <Bot className="h-8 w-8 text-whatsapp-green" />
             <div>
-              <h1 className="text-lg font-semibold">WhatsApp Bot</h1>
+              <h1 className="text-lg font-semibold">ZecaBot</h1>
               <p className="text-xs text-muted-foreground">Dashboard</p>
             </div>
           </div>

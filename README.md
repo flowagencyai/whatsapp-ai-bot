@@ -1,6 +1,6 @@
-# WhatsApp AI Bot
+# ZecaBot
 
-Bot WhatsApp inteligente construído com Baileys, TypeScript e integração com IA para atendimento automatizado.
+Sistema inteligente de automação WhatsApp construído com Baileys, TypeScript e integração com IA para atendimento automatizado.
 
 ## 🚀 Funcionalidades
 
@@ -42,8 +42,8 @@ src/
 
 1. **Clone o repositório**
 ```bash
-git clone <repo-url>
-cd whatsappbot
+git clone https://github.com/flowagencyai/zecabot.git
+cd zecabot
 ```
 
 2. **Instale dependências**

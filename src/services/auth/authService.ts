@@ -126,7 +126,7 @@ class AuthService {
       const defaultAdmin: User = {
         id: 'admin-' + Date.now(),
         username: 'admin',
-        email: 'admin@whatsappbot.local',
+        email: 'admin@zecabot.local',
         role: 'super_admin',
         permissions: ROLE_PERMISSIONS.super_admin,
         isActive: true,
@@ -308,8 +308,8 @@ class AuthService {
 
     const accessToken = jwt.sign(payload, this.jwtSecret, {
       expiresIn: accessTokenExpiry,
-      audience: 'whatsapp-bot-admin',
-      issuer: 'whatsapp-bot-auth'
+      audience: 'zecabot-admin',
+      issuer: 'zecabot-auth'
     });
 
     const refreshToken = jwt.sign(

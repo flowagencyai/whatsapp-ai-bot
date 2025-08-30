@@ -594,7 +594,7 @@ class WhatsAppBot {
    */
   public async start(): Promise<void> {
     try {
-      logger.info(`Starting WhatsApp Bot in ${env.nodeEnv} mode...`);
+      logger.info(`Starting ZecaBot in ${env.nodeEnv} mode...`);
       
       // Setup graceful shutdown first
       this.setupGracefulShutdown();
@@ -605,7 +605,7 @@ class WhatsAppBot {
       // Start HTTP server
       this.server = this.app.listen(env.port, () => {
         logger.info(`HTTP server listening on port ${env.port}`);
-        logger.info('WhatsApp Bot started successfully! 🚀');
+        logger.info('ZecaBot started successfully! 🚀');
         
         // Log configuration summary
         logger.info('Bot Configuration:', {

@@ -134,7 +134,7 @@ class EmailService {
             </div>
             <div class="content">
               <h2>Olá ${username}!</h2>
-              <p>Obrigado por se cadastrar no ${process.env.BOT_NAME || 'WhatsApp Bot'}.</p>
+              <p>Obrigado por se cadastrar no ${process.env.BOT_NAME || 'ZecaBot'}.</p>
               <p>Para ativar sua conta, por favor confirme seu endereço de email clicando no botão abaixo:</p>
               <center>
                 <a href="${verificationUrl}" class="button">Confirmar Email</a>
@@ -147,7 +147,7 @@ class EmailService {
               <p>Se você não criou esta conta, pode ignorar este email.</p>
             </div>
             <div class="footer">
-              <p>© 2025 ${process.env.BOT_NAME || 'WhatsApp Bot'}. Todos os direitos reservados.</p>
+              <p>© 2025 ${process.env.BOT_NAME || 'ZecaBot'}. Todos os direitos reservados.</p>
             </div>
           </div>
         </body>
@@ -156,7 +156,7 @@ class EmailService {
 
       return await this.sendEmail({
         to: email,
-        subject: `Confirme seu email - ${process.env.BOT_NAME || 'WhatsApp Bot'}`,
+        subject: `Confirme seu email - ${process.env.BOT_NAME || 'ZecaBot'}`,
         html
       });
     } catch (error) {
@@ -202,7 +202,7 @@ class EmailService {
               <p>Se você não solicitou a redefinição de senha, pode ignorar este email.</p>
             </div>
             <div class="footer">
-              <p>© 2025 ${process.env.BOT_NAME || 'WhatsApp Bot'}. Todos os direitos reservados.</p>
+              <p>© 2025 ${process.env.BOT_NAME || 'ZecaBot'}. Todos os direitos reservados.</p>
             </div>
           </div>
         </body>
@@ -211,7 +211,7 @@ class EmailService {
 
       return await this.sendEmail({
         to: email,
-        subject: `Redefinir Senha - ${process.env.BOT_NAME || 'WhatsApp Bot'}`,
+        subject: `Redefinir Senha - ${process.env.BOT_NAME || 'ZecaBot'}`,
         html
       });
     } catch (error) {
@@ -241,7 +241,7 @@ class EmailService {
         <body>
           <div class="container">
             <div class="header">
-              <h1>Bem-vindo ao ${process.env.BOT_NAME || 'WhatsApp Bot'}!</h1>
+              <h1>Bem-vindo ao ${process.env.BOT_NAME || 'ZecaBot'}!</h1>
             </div>
             <div class="content">
               <h2>Olá ${username}!</h2>
@@ -268,7 +268,7 @@ class EmailService {
               <p>Se precisar de ajuda, não hesite em nos contatar.</p>
             </div>
             <div class="footer">
-              <p>© 2025 ${process.env.BOT_NAME || 'WhatsApp Bot'}. Todos os direitos reservados.</p>
+              <p>© 2025 ${process.env.BOT_NAME || 'ZecaBot'}. Todos os direitos reservados.</p>
             </div>
           </div>
         </body>
@@ -277,7 +277,7 @@ class EmailService {
 
       return await this.sendEmail({
         to: email,
-        subject: `Bem-vindo ao ${process.env.BOT_NAME || 'WhatsApp Bot'}!`,
+        subject: `Bem-vindo ao ${process.env.BOT_NAME || 'ZecaBot'}!`,
         html
       });
     } catch (error) {

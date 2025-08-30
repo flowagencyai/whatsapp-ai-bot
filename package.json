@@ -1,7 +1,7 @@
 {
-  "name": "whatsapp-ai-bot",
+  "name": "zecabot",
   "version": "2.0.0",
-  "description": "WhatsApp AI Bot with Baileys, TypeScript and LangChain",
+  "description": "ZecaBot - Sistema Inteligente de Automação WhatsApp",
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
@@ -17,10 +17,10 @@
     "type-check": "tsc --noEmit",
     "setup": "./scripts/setup.sh",
     "tools": "./scripts/dev-tools.sh",
-    "docker:build": "docker build -t whatsapp-ai-bot .",
+    "docker:build": "docker build -t zecabot .",
     "docker:run": "docker-compose up -d",
     "docker:stop": "docker-compose down",
-    "docker:logs": "docker-compose logs -f whatsapp-bot",
+    "docker:logs": "docker-compose logs -f zecabot",
     "clean": "rm -rf dist/ logs/*.log temp/*",
     "prebuild": "npm run clean && npm run type-check",
     "prestart": "npm run build",

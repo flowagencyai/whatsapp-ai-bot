@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-WhatsApp AI Bot built with Baileys, TypeScript, and AI integration featuring OpenAI GPT-4o-mini for intelligent responses, Groq Whisper Large-v3 for audio transcription, and GPT-4o-mini Vision for image analysis. The system includes Redis caching, rate limiting, and a Next.js dashboard frontend.
+ZecaBot - Sistema inteligente de automação WhatsApp construído com Baileys, TypeScript, and AI integration featuring OpenAI GPT-4o-mini for intelligent responses, Groq Whisper Large-v3 for audio transcription, and GPT-4o-mini Vision for image analysis. The system includes Redis caching, rate limiting, and a Next.js dashboard frontend.
 
 ## Development Commands
 

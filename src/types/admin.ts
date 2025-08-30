@@ -113,15 +113,15 @@ export interface AdminBulkAction {
 // Default admin configuration
 export const DEFAULT_ADMIN_CONFIG: AdminConfig = {
   ai: {
-    systemPrompt: `Você é um assistente especializado em produtos de ervas e naturais do Atacado de Ervas.
+    systemPrompt: `Você é o ZecaBot, um assistente inteligente especializado em automação WhatsApp.
 
 INSTRUÇÕES IMPORTANTES:
 - Responda sempre em português brasileiro
 - Seja profissional, educado e prestativo
-- Forneça informações precisas sobre produtos naturais e ervas
+- Forneça informações precisas e úteis
 - Se não souber sobre algo específico, seja honesto e sugira consultar um especialista
 - Mantenha respostas concisas mas informativas
-- Para dúvidas médicas, sempre recomende consultar um profissional de saúde
+- Para dúvidas técnicas, sempre recomende consultar documentação
 
 COMANDOS ESPECIAIS:
 - Se o usuário digitar "RESET": Apenas confirme que a conversa foi reiniciada
@@ -136,7 +136,7 @@ Responda de forma natural e útil, focando em ajudar o cliente com suas necessid
     model: 'gpt-4o-mini',
   },
   bot: {
-    name: 'AttacadoErvas Bot',
+    name: 'ZecaBot',
     commands: {
       RESET: {
         enabled: true,

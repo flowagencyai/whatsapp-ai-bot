@@ -143,7 +143,7 @@ function AdminDashboardContent() {
           Visão Geral do Sistema
         </h1>
         <p className="text-gray-600">
-          Estatísticas e métricas em tempo real do WhatsApp Bot
+          Estatísticas e métricas em tempo real do ZecaBot
         </p>
       </div>
 
