@@ -550,6 +550,16 @@ class MessageHandler {
       const allHealthy = [whatsappHealth, redisHealth, langchainHealth, audioHealth]
         .every(h => h.status === 'healthy');
 
+      // Log unhealthy services for debugging
+      if (!allHealthy) {
+        const unhealthyServices = [];
+        if (whatsappHealth.status !== 'healthy') unhealthyServices.push('whatsapp');
+        if (redisHealth.status !== 'healthy') unhealthyServices.push('redis');
+        if (langchainHealth.status !== 'healthy') unhealthyServices.push('langchain');
+        if (audioHealth.status !== 'healthy') unhealthyServices.push('audioProcessor');
+        logger.debug('Unhealthy services detected', { unhealthyServices });
+      }
+
       return {
         status: allHealthy ? 'healthy' : 'unhealthy',
         details: {
@@ -563,6 +573,7 @@ class MessageHandler {
       };
 
     } catch (error) {
+      logger.error('Health check failed', error as Error);
       return {
         status: 'unhealthy',
         details: {

@@ -397,6 +397,7 @@ class WhatsAppBot {
           whatsapp: whatsappHealth.status,
           redis: redisHealth.status,
           messageHandler: handlerHealth.status,
+          messageHandlerDetails: handlerHealth.details,
           uptime: process.uptime(),
           memory: process.memoryUsage(),
           timestamp: new Date().toISOString(),

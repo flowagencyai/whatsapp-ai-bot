@@ -7,10 +7,10 @@ import { logger } from '../utils/logger.js';
 
 const authRouter = Router();
 
-// Rate limiting for auth endpoints
+// Rate limiting for auth endpoints (relaxed for development)
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // Limit each IP to 10 requests per windowMs
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 50, // Limit each IP to 50 requests per windowMs
   message: {
     success: false,
     error: 'Too many authentication attempts. Please try again later.',
@@ -33,8 +33,8 @@ const authLimiter = rateLimit({
 });
 
 const strictAuthLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Stricter limit for login attempts
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 20, // Stricter limit for login attempts
   message: {
     success: false,
     error: 'Too many login attempts. Please try again later.',

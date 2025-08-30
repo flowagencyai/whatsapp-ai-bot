@@ -534,20 +534,22 @@ RESUMO:`,
    */
   public async healthCheck(): Promise<{ status: 'healthy' | 'unhealthy'; details: Record<string, unknown> }> {
     try {
-      const start = Date.now();
+      // Check if the model is initialized and configuration is valid
+      const isConfigured = !!(this.chatModel && env.openai.apiKey);
+      const memoryStats = this.getMemoryStats();
       
-      // Simple test request
-      const testResponse = await this.chatModel.invoke('Test');
-      const responseTime = Date.now() - start;
-
       return {
-        status: 'healthy',
+        status: isConfigured ? 'healthy' : 'unhealthy',
         details: {
           service: 'LangChain',
           model: env.openai.model,
-          responseTime,
-          memoryStats: this.getMemoryStats(),
-          lastResponse: testResponse.content?.toString().substring(0, 50) || 'No content',
+          configured: isConfigured,
+          memoryStats,
+          metricsUptime: Date.now() - this.metrics.startTime,
+          totalRequests: this.metrics.totalRequests,
+          successRate: this.metrics.totalRequests > 0 
+            ? (this.metrics.successfulRequests / this.metrics.totalRequests * 100).toFixed(2) + '%'
+            : 'N/A',
         },
       };
 

@@ -1,9 +1,9 @@
-import { AdminStats, AdminUser, AdminMemoryInfo } from '@/types/admin';
-import { Redis } from '@/services/memory/redisClient';
-import { langchainService } from '@/services/ai/langchain';
-import { whatsappConnection } from '@/connection/whatsapp';
-import { logger } from '@/utils/logger';
-import { env } from '@/config/env';
+import { AdminStats, AdminUser, AdminMemoryInfo } from '../types/admin.js';
+import { Redis } from '../memory/redisClient.js';
+import { langchainService } from '../ai/langchain.js';
+import { whatsappConnection } from '../../connection/whatsapp.js';
+import { logger } from '../../utils/logger.js';
+import { env } from '../../config/env.js';
 
 /**
  * Admin Statistics Manager
@@ -61,6 +61,11 @@ export class AdminStatsManager {
       // Get all conversations from Redis
       const conversations = await Redis.getAllConversations();
       const users: AdminUser[] = [];
+
+      // Return empty array if no real conversations exist
+      if (conversations.length === 0) {
+        return [];
+      }
 
       for (const conversation of conversations) {
         try {
@@ -257,6 +262,17 @@ export class AdminStatsManager {
   private async getBotStats(): Promise<AdminStats['bot']> {
     try {
       const conversations = await Redis.getAllConversations();
+      
+      // If no real conversations, return zero stats
+      if (conversations.length === 0) {
+        return {
+          totalMessages: 0,
+          totalUsers: 0,
+          activeUsers: 0,
+          messagesLast24h: 0
+        };
+      }
+      
       const totalUsers = conversations.length;
       
       // Calculate active users (last activity within 24h)
@@ -303,6 +319,15 @@ export class AdminStatsManager {
       // Get real AI metrics from LangChain service
       const aiStats = langchainService.getAIStats();
       
+      // Return real AI stats or zeros if no data
+      if (aiStats.totalTokens === 0) {
+        return {
+          totalTokens: 0,
+          averageResponseTime: 0,
+          successRate: 0
+        };
+      }
+      
       return {
         totalTokens: aiStats.totalTokens,
         averageResponseTime: aiStats.averageResponseTime,
@@ -317,6 +342,7 @@ export class AdminStatsManager {
       };
     }
   }
+
 
   /**
    * Format phone number for display
